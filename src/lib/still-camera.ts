@@ -86,11 +86,13 @@ export default class StillCamera extends EventEmitter {
 
   async takeImage() {
     try {
-      if (this.livePreview && this.childProcess) {
+      if (this.livePreview) {
         return new Promise<Buffer>(resolve => {
           this.once('frame', data => resolve(data));
-          this.childProcess.stdin.write('-');
-          this.childProcess.stdin.end();
+          if (this.childProcess) {
+            this.childProcess.stdin.write('-');
+            this.childProcess.stdin.end();
+          }
         });
       } else {
         return await spawnPromise('raspistill', [
