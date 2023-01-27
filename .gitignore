@@ -4,7 +4,6 @@ node_modules/
 *.secrets.*
 
 # common build sites
-dist/
 dist-types/
 
 # build artifacts
