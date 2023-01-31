@@ -51,12 +51,16 @@ declare class StreamCamera extends EventEmitter {
     private readonly options;
     private childProcess?;
     private streams;
-    private readonly livePreview;
+    readonly livePreview: boolean;
     static readonly jpegSignature: Buffer;
     constructor(options?: StreamOptions);
     startCapture(): Promise<void>;
     stopCapture(): Promise<void>;
     createStream(): stream.Readable;
     takeImage(): Promise<Buffer>;
+    /**
+     * @TODO
+     */
+    stopPreview(): void;
 }
 export default StreamCamera;

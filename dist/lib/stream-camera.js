@@ -162,6 +162,11 @@ class StreamCamera extends events_1.EventEmitter {
             throw new Error("Codec must be 'MJPEG' to take image");
         return new Promise(resolve => this.once('frame', data => resolve(data)));
     }
+    /**
+     * @TODO
+     */
+    stopPreview() {
+    }
 }
 StreamCamera.jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 exports.default = StreamCamera;

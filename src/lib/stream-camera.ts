@@ -57,7 +57,7 @@ class StreamCamera extends EventEmitter {
   private readonly options: StreamOptions;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
-  private readonly livePreview: boolean;
+  public readonly livePreview: boolean;
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 
@@ -242,6 +242,13 @@ class StreamCamera extends EventEmitter {
     if (this.options.codec !== Codec.MJPEG) throw new Error("Codec must be 'MJPEG' to take image");
 
     return new Promise<Buffer>(resolve => this.once('frame', data => resolve(data)));
+  }
+
+  /**
+   * @TODO
+   */
+  stopPreview() {
+
   }
 }
 
