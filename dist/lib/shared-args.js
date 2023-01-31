@@ -94,6 +94,18 @@ function getSharedArgs(options) {
          * Video Stabilisation
          */
         ...(options.videoStabilisation ? ['--vstab'] : []),
+        /**
+         * Preview Window Control
+         * Sets the size of the preview window and where it appears.
+         * The value should be given as X,Y,W,H—where X and Y are the
+         * pixel coordinates where the window’s top-left corner should be drawn.
+         */
+        ...(options.showPreview ? ['--preview', options.toString(), '--keypress'] : ['--nopreview']),
+        /**
+         * Fullscreen preview
+         * Makes the preview image fill the screen, overriding any other preview option.
+         */
+        ...(options.fullscreen ? ['--fullscreen'] : []),
     ];
 }
 exports.getSharedArgs = getSharedArgs;

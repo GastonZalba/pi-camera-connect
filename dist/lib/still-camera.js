@@ -6,12 +6,13 @@ const __1 = require("..");
 const util_1 = require("../util");
 const shared_args_1 = require("./shared-args");
 class StillCamera extends events_1.EventEmitter {
-    //static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
+    // static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
     constructor(options = {}) {
+        var _a;
         super();
         this.streams = [];
         this.options = Object.assign({ rotation: __1.Rotation.Rotate0, flip: __1.Flip.None, delay: 1 }, options);
-        this.livePreview = false;
+        this.livePreview = !!((_a = this.options.showPreview) !== null && _a !== void 0 ? _a : this.options.fullscreen);
         this.args = [
             /**
              * Add the command-line arguments that are common to both `raspivid` and `raspistill`
@@ -23,11 +24,11 @@ class StillCamera extends events_1.EventEmitter {
             '--timeout',
             this.options.delay.toString(),
             /**
-            * RAW (Save Bayer Data)
-            */
+             * RAW (Save Bayer Data)
+             */
             ...(this.options.raw ? ['--raw'] : []),
             /**
-             * JPEG Quality)
+             * JPEG Quality
              */
             ...(this.options.quality ? ['--quality', this.options.quality.toString()] : []),
             /**
@@ -48,15 +49,7 @@ class StillCamera extends events_1.EventEmitter {
                     }
                 });
             }
-            else {
-                return await util_1.spawnPromise('raspistill', [
-                    ...this.args,
-                    /**
-                      * Do not display preview overlay on screen
-                      */
-                    '--nopreview'
-                ]);
-            }
+            return await util_1.spawnPromise('raspistill', this.args);
         }
         catch (err) {
             if (err.code === 'ENOENT') {
@@ -72,14 +65,11 @@ class StillCamera extends events_1.EventEmitter {
             // TODO: refactor promise logic to be more ergonomic
             // so that we don't need to try/catch here
             try {
-                const args = [...this.args,
-                    '--preview', preview.toString(),
-                    '--keypress'
-                ];
+                const args = [...this.args, '--preview', preview.toString(), '--keypress'];
                 // Spawn child process
                 this.childProcess = child_process_1.spawn('raspistill', args);
                 // Listen for error event to reject promise
-                this.childProcess.once('error', () => reject(new Error("Could not start preview with StillCamera")));
+                this.childProcess.once('error', () => reject(new Error('Could not start preview with StillCamera')));
                 // Wait for first data event to resolve promise
                 this.childProcess.stdout.once('data', () => resolve());
                 let stdoutBuffer = Buffer.alloc(0);

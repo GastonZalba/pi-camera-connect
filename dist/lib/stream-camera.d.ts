@@ -40,6 +40,8 @@ export interface StreamOptions {
     colourEffect?: [number, number];
     dynamicRange?: DynamicRange;
     videoStabilisation?: boolean;
+    showPreview?: [number, number, number, number];
+    fullscreen?: boolean;
 }
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;
@@ -49,6 +51,7 @@ declare class StreamCamera extends EventEmitter {
     private readonly options;
     private childProcess?;
     private streams;
+    private readonly livePreview;
     static readonly jpegSignature: Buffer;
     constructor(options?: StreamOptions);
     startCapture(): Promise<void>;

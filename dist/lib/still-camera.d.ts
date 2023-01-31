@@ -24,14 +24,16 @@ export interface StillOptions {
     videoStabilisation?: boolean;
     raw?: boolean;
     quality?: number;
+    showPreview?: [number, number, number, number];
+    fullscreen?: boolean;
 }
 export default class StillCamera extends EventEmitter {
     private readonly options;
     static readonly jpegSignature: Buffer;
-    private livePreview;
+    livePreview: boolean;
     private childProcess?;
     private streams;
-    private args;
+    private readonly args;
     constructor(options?: StillOptions);
     takeImage(): Promise<Buffer>;
     startPreview(preview: [number, number, number, number]): Promise<void>;

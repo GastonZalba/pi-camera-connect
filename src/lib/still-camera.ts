@@ -28,6 +28,8 @@ export interface StillOptions {
   videoStabilisation?: boolean;
   raw?: boolean;
   quality?: number;
+  showPreview?: [number, number, number, number]; // X,Y,W,H
+  fullscreen?: boolean;
 }
 
 export default class StillCamera extends EventEmitter {
@@ -35,12 +37,12 @@ export default class StillCamera extends EventEmitter {
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
 
-  private livePreview: boolean;
+  public livePreview: boolean;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
-  private args: Array<string>
+  private readonly args: Array<string>;
 
-  //static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
+  // static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 
   constructor(options: StillOptions = {}) {
     super();
@@ -52,7 +54,7 @@ export default class StillCamera extends EventEmitter {
       ...options,
     };
 
-    this.livePreview = false;
+    this.livePreview = !!(this.options.showPreview ?? this.options.fullscreen);
 
     this.args = [
       /**
@@ -67,12 +69,12 @@ export default class StillCamera extends EventEmitter {
       this.options.delay!.toString(),
 
       /**
-      * RAW (Save Bayer Data)
-      */
+       * RAW (Save Bayer Data)
+       */
       ...(this.options.raw ? ['--raw'] : []),
 
       /**
-       * JPEG Quality)
+       * JPEG Quality
        */
       ...(this.options.quality ? ['--quality', this.options.quality.toString()] : []),
 
@@ -81,7 +83,7 @@ export default class StillCamera extends EventEmitter {
        */
       '--output',
       '-',
-    ]
+    ];
   }
 
   async takeImage() {
@@ -94,15 +96,8 @@ export default class StillCamera extends EventEmitter {
             this.childProcess.stdin.end();
           }
         });
-      } else {
-        return await spawnPromise('raspistill', [
-          ...this.args,
-          /**
-            * Do not display preview overlay on screen
-            */
-          '--nopreview'
-        ]);
       }
+      return await spawnPromise('raspistill', this.args);
     } catch (err) {
       if (err.code === 'ENOENT') {
         throw new Error(
@@ -122,21 +117,14 @@ export default class StillCamera extends EventEmitter {
       // TODO: refactor promise logic to be more ergonomic
       // so that we don't need to try/catch here
       try {
-        const args = [...this.args,
-          '--preview', preview.toString(),
-          '--keypress'
-        ];
+        const args = [...this.args, '--preview', preview.toString(), '--keypress'];
 
         // Spawn child process
         this.childProcess = spawn('raspistill', args);
 
         // Listen for error event to reject promise
         this.childProcess.once('error', () =>
-          reject(
-            new Error(
-              "Could not start preview with StillCamera",
-            ),
-          ),
+          reject(new Error('Could not start preview with StillCamera')),
         );
 
         // Wait for first data event to resolve promise
@@ -200,5 +188,4 @@ export default class StillCamera extends EventEmitter {
 
     this.livePreview = false;
   }
-
 }

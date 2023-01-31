@@ -44,6 +44,8 @@ export interface StreamOptions {
   colourEffect?: [number, number]; // U,V
   dynamicRange?: DynamicRange;
   videoStabilisation?: boolean;
+  showPreview?: [number, number, number, number]; // X,Y,W,H
+  fullscreen?: boolean;
 }
 
 declare interface StreamCamera {
@@ -55,6 +57,7 @@ class StreamCamera extends EventEmitter {
   private readonly options: StreamOptions;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
+  private readonly livePreview: boolean;
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 
@@ -70,6 +73,8 @@ class StreamCamera extends EventEmitter {
       sensorMode: SensorMode.AutoSelect,
       ...options,
     };
+
+    this.livePreview = !!(this.options.showPreview ?? this.options.fullscreen);
   }
 
   startCapture(): Promise<void> {
@@ -143,11 +148,6 @@ class StreamCamera extends EventEmitter {
            */
           '--timeout',
           (0).toString(),
-
-          /**
-           * Do not display preview overlay on screen
-           */
-          '--nopreview',
 
           /**
            * Output to stdout
@@ -230,7 +230,7 @@ class StreamCamera extends EventEmitter {
 
   createStream() {
     const newStream = new stream.Readable({
-      read: () => { },
+      read: () => {},
     });
 
     this.streams.push(newStream);

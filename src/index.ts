@@ -72,5 +72,5 @@ export enum DynamicRange {
   Off = 'off',
   Low = 'low',
   Medium = 'medium',
-  High = 'high'
+  High = 'high',
 }

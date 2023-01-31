@@ -23,9 +23,11 @@ var SensorMode;
 })(SensorMode = exports.SensorMode || (exports.SensorMode = {}));
 class StreamCamera extends events_1.EventEmitter {
     constructor(options = {}) {
+        var _a;
         super();
         this.streams = [];
         this.options = Object.assign({ rotation: __1.Rotation.Rotate0, flip: __1.Flip.None, bitRate: 17000000, fps: 30, codec: Codec.H264, sensorMode: SensorMode.AutoSelect }, options);
+        this.livePreview = !!((_a = this.options.showPreview) !== null && _a !== void 0 ? _a : this.options.fullscreen);
     }
     startCapture() {
         // eslint-disable-next-line no-async-promise-executor
@@ -93,10 +95,6 @@ class StreamCamera extends events_1.EventEmitter {
                      */
                     '--timeout',
                     (0).toString(),
-                    /**
-                     * Do not display preview overlay on screen
-                     */
-                    '--nopreview',
                     /**
                      * Output to stdout
                      */
