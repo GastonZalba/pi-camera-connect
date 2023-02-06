@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { AwbMode, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
 import { getSharedArgs } from './shared-args';
 
 export enum Codec {
@@ -44,8 +44,9 @@ export interface StreamOptions {
   colourEffect?: [number, number]; // U,V
   dynamicRange?: DynamicRange;
   videoStabilisation?: boolean;
-  showPreview?: [number, number, number, number]; // X,Y,W,H
-  fullscreen?: boolean;
+  showPreview?: [number, number, number, number] | 'fullscreen' | false; // X,Y,W,H
+  opacityPreview?: number;
+  displayNumber?: DisplayNumber;
 }
 
 declare interface StreamCamera {
@@ -74,7 +75,7 @@ class StreamCamera extends EventEmitter {
       ...options,
     };
 
-    this.livePreview = !!(this.options.showPreview ?? this.options.fullscreen);
+    this.livePreview = this.options.showPreview !== false;
   }
 
   startCapture(): Promise<void> {
@@ -247,9 +248,7 @@ class StreamCamera extends EventEmitter {
   /**
    * @TODO
    */
-  stopPreview() {
-
-  }
+  stopPreview() {}
 }
 
 export default StreamCamera;

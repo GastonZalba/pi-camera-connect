@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { AwbMode, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
 import { spawnPromise } from '../util';
 import { getSharedArgs } from './shared-args';
 
@@ -28,8 +28,9 @@ export interface StillOptions {
   videoStabilisation?: boolean;
   raw?: boolean;
   quality?: number;
-  showPreview?: [number, number, number, number]; // X,Y,W,H
-  fullscreen?: boolean;
+  showPreview?: [number, number, number, number] | 'fullscreen' | false; // X,Y,W,H
+  opacityPreview?: number;
+  displayNumber?: DisplayNumber;
 }
 
 export default class StillCamera extends EventEmitter {
@@ -54,7 +55,7 @@ export default class StillCamera extends EventEmitter {
       ...options,
     };
 
-    this.livePreview = !!(this.options.showPreview ?? this.options.fullscreen);
+    this.livePreview = this.options.showPreview !== false;
 
     this.args = [
       /**

@@ -121,12 +121,17 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
      * The value should be given as X,Y,W,H—where X and Y are the
      * pixel coordinates where the window’s top-left corner should be drawn.
      */
-    ...(options.showPreview ? ['--preview', options.toString(), '--keypress'] : ['--nopreview']),
+    ...(options.showPreview
+      ? [
+          '--preview',
+          options.showPreview === 'fullscreen' ? '--fullscreen' : options.showPreview.toString(),
+          '--keypress',
+        ]
+      : ['--nopreview']),
 
     /**
-     * Fullscreen preview
-     * Makes the preview image fill the screen, overriding any other preview option.
+     * Display on which to display the preview window (dispmanx/tvservice numbering)
      */
-    ...(options.fullscreen ? ['--fullscreen'] : []),
+    ...(options.displayNumber ? ['--dispnum', options.displayNumber.toString()] : []),
   ];
 }

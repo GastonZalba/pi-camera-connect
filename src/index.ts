@@ -74,3 +74,10 @@ export enum DynamicRange {
   Medium = 'medium',
   High = 'high',
 }
+
+export enum DisplayNumber {
+  'DSI/DPI LCD' = 0,
+  HDMI0 = 2,
+  SDTV = 3,
+  HDMI1 = 7,
+}
