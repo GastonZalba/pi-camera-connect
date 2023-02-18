@@ -8,11 +8,10 @@ const shared_args_1 = require("./shared-args");
 class StillCamera extends events_1.EventEmitter {
     // static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
     constructor(options = {}) {
-        var _a;
         super();
         this.streams = [];
         this.options = Object.assign({ rotation: __1.Rotation.Rotate0, flip: __1.Flip.None, delay: 1 }, options);
-        this.livePreview = !!((_a = this.options.showPreview) !== null && _a !== void 0 ? _a : this.options.fullscreen);
+        this.livePreview = !!this.options.showPreview;
         this.args = [
             /**
              * Add the command-line arguments that are common to both `raspivid` and `raspistill`
@@ -25,23 +24,48 @@ class StillCamera extends events_1.EventEmitter {
             this.options.delay.toString(),
             /**
              * RAW (Save Bayer Data)
+             * This option inserts the raw Bayer data from the camera in to the
+             * JPEG metadata.
              */
             ...(this.options.raw ? ['--raw'] : []),
             /**
              * JPEG Quality
+             * Quality 100 is almost completely uncompressed. 75 is a good allround value.
              */
             ...(this.options.quality ? ['--quality', this.options.quality.toString()] : []),
+            /**
+             * Burst
+             * This prevents the camera from returning to preview mode in between captures,
+             * meaning that captures can be taken closer together.
+             */
+            ...(this.options.burst ? ['--burst'] : []),
+            /**
+             * Thumbnail Settings (x:y:quality)
+             * Allows specification of the thumbnail image inserted in to the JPEG file.
+             * If not specified, defaults are a size of 64x48 at quality 35.
+             */
+            ...(this.options.thumbnail
+                ? [
+                    '--thumb',
+                    Array.isArray(this.options.thumbnail)
+                        ? this.options.thumbnail.join(':')
+                        : this.options.thumbnail,
+                ]
+                : []),
             /**
              * Output to stdout
              */
             '--output',
             '-',
         ];
+        if (this.livePreview) {
+            this.startPreview();
+        }
     }
     async takeImage() {
         try {
             if (this.livePreview) {
-                return new Promise(resolve => {
+                return await new Promise(resolve => {
                     this.once('frame', data => resolve(data));
                     if (this.childProcess) {
                         this.childProcess.stdin.write('-');
@@ -58,16 +82,14 @@ class StillCamera extends events_1.EventEmitter {
             throw err;
         }
     }
-    startPreview(preview) {
-        this.livePreview = true;
+    startPreview() {
         // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             // TODO: refactor promise logic to be more ergonomic
             // so that we don't need to try/catch here
             try {
-                const args = [...this.args, '--preview', preview.toString(), '--keypress'];
                 // Spawn child process
-                this.childProcess = child_process_1.spawn('raspistill', args);
+                this.childProcess = child_process_1.spawn('raspistill', this.args);
                 // Listen for error event to reject promise
                 this.childProcess.once('error', () => reject(new Error('Could not start preview with StillCamera')));
                 // Wait for first data event to resolve promise

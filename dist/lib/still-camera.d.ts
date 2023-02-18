@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
-import { AwbMode, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImxfxMode, MeteringMode, Rotation } from '..';
 export interface StillOptions {
     width?: number;
     height?: number;
@@ -16,6 +16,7 @@ export interface StillOptions {
     exposureCompensation?: number;
     exposureMode?: ExposureMode;
     awbMode?: AwbMode;
+    awbGains?: [number, number];
     analogGain?: number;
     digitalGain?: number;
     imageEffect?: ImxfxMode;
@@ -24,8 +25,15 @@ export interface StillOptions {
     videoStabilisation?: boolean;
     raw?: boolean;
     quality?: number;
-    showPreview?: [number, number, number, number];
-    fullscreen?: boolean;
+    statistics?: boolean;
+    thumbnail?: [number, number, number] | 'none';
+    meteringMode?: MeteringMode;
+    flickerMode?: FlickerMode;
+    burst?: boolean;
+    roi?: [number, number, number, number];
+    showPreview?: [number, number, number, number] | 'fullscreen' | false;
+    opacityPreview?: number;
+    displayNumber?: DisplayNumber;
 }
 export default class StillCamera extends EventEmitter {
     private readonly options;
@@ -36,6 +44,6 @@ export default class StillCamera extends EventEmitter {
     private readonly args;
     constructor(options?: StillOptions);
     takeImage(): Promise<Buffer>;
-    startPreview(preview: [number, number, number, number]): Promise<void>;
+    private startPreview;
     stopPreview(): Promise<void>;
 }

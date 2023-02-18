@@ -80,4 +80,25 @@ var DynamicRange;
     DynamicRange["Medium"] = "medium";
     DynamicRange["High"] = "high";
 })(DynamicRange = exports.DynamicRange || (exports.DynamicRange = {}));
+var MeteringMode;
+(function (MeteringMode) {
+    MeteringMode["Average"] = "average";
+    MeteringMode["Spot"] = "spot";
+    MeteringMode["Backlit"] = "backlit";
+    MeteringMode["Matrix"] = "matrix";
+})(MeteringMode = exports.MeteringMode || (exports.MeteringMode = {}));
+var FlickerMode;
+(function (FlickerMode) {
+    FlickerMode["Off"] = "off";
+    FlickerMode["Auto"] = "auto";
+    FlickerMode["50hz"] = "50hz";
+    FlickerMode["60Hz"] = "60hz";
+})(FlickerMode = exports.FlickerMode || (exports.FlickerMode = {}));
+var DisplayNumber;
+(function (DisplayNumber) {
+    DisplayNumber[DisplayNumber["DSI/DPI LCD"] = 0] = "DSI/DPI LCD";
+    DisplayNumber[DisplayNumber["HDMI0"] = 2] = "HDMI0";
+    DisplayNumber[DisplayNumber["SDTV"] = 3] = "SDTV";
+    DisplayNumber[DisplayNumber["HDMI1"] = 7] = "HDMI1";
+})(DisplayNumber = exports.DisplayNumber || (exports.DisplayNumber = {}));
 //# sourceMappingURL=index.js.map

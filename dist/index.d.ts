@@ -68,3 +68,21 @@ export declare enum DynamicRange {
     Medium = "medium",
     High = "high"
 }
+export declare enum MeteringMode {
+    Average = "average",
+    Spot = "spot",
+    Backlit = "backlit",
+    Matrix = "matrix"
+}
+export declare enum FlickerMode {
+    Off = "off",
+    Auto = "auto",
+    '50hz' = "50hz",
+    '60Hz' = "60hz"
+}
+export declare enum DisplayNumber {
+    'DSI/DPI LCD' = 0,
+    HDMI0 = 2,
+    SDTV = 3,
+    HDMI1 = 7
+}

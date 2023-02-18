@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { AwbMode, DynamicRange, ExposureMode, Flip, ImxfxMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImxfxMode, MeteringMode, Rotation } from '..';
 export declare enum Codec {
     H264 = "H264",
     MJPEG = "MJPEG"
@@ -34,14 +34,20 @@ export interface StreamOptions {
     exposureCompensation?: number;
     exposureMode?: ExposureMode;
     awbMode?: AwbMode;
+    awbGains?: [number, number];
     analogGain?: number;
     digitalGain?: number;
     imageEffect?: ImxfxMode;
     colourEffect?: [number, number];
     dynamicRange?: DynamicRange;
     videoStabilisation?: boolean;
-    showPreview?: [number, number, number, number];
-    fullscreen?: boolean;
+    statistics?: boolean;
+    meteringMode?: MeteringMode;
+    flickerMode?: FlickerMode;
+    roi?: [number, number, number, number];
+    showPreview?: [number, number, number, number] | 'fullscreen' | false;
+    opacityPreview?: number;
+    displayNumber?: DisplayNumber;
 }
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;

@@ -23,11 +23,10 @@ var SensorMode;
 })(SensorMode = exports.SensorMode || (exports.SensorMode = {}));
 class StreamCamera extends events_1.EventEmitter {
     constructor(options = {}) {
-        var _a;
         super();
         this.streams = [];
         this.options = Object.assign({ rotation: __1.Rotation.Rotate0, flip: __1.Flip.None, bitRate: 17000000, fps: 30, codec: Codec.H264, sensorMode: SensorMode.AutoSelect }, options);
-        this.livePreview = !!((_a = this.options.showPreview) !== null && _a !== void 0 ? _a : this.options.fullscreen);
+        this.livePreview = this.options.showPreview !== false;
     }
     startCapture() {
         // eslint-disable-next-line no-async-promise-executor
@@ -83,7 +82,22 @@ class StreamCamera extends events_1.EventEmitter {
                      * |    4 | 1640x1232           | 4:3          | 0.1-40fps   | Full    | 2x2     |
                      * |    5 | 1640x922            | 16:9         | 0.1-40fps   | Full    | 2x2     |
                      * |    6 | 1280x720            | 16:9         | 40-90fps    | Partial | 2x2     |
-                     * |    7 | 640x480             | 4:3          | 40-90fps    | Partial | 2x2     |
+                     * |    7 | 640x480             | 4:3          | 40-200fps*  | Partial | 2x2     |
+                     *
+                     * *For frame rates over 120fps, it is necessary to turn off automatic exposure and gain
+                     * control using -ex off. Doing so should achieve the higher frame rates, but exposure
+                     * time and gains will need to be set to fixed values supplied by the user.
+                     *
+                     *
+                     * HQ Camera (IMX477):
+                     *
+                     * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   |   Binning   |
+                     * |------|---------------------|--------------|-------------|---------|-------------|
+                     * |    0 | automatic selection |              |             |         |             |
+                     * |    1 | 2028x1080           | 169:90       | 0.1-50fps   | Partial | 2x2 binned  |
+                     * |    2 | 2028x1520           | 4:3          | 0.1-50fps   | Full    | 2x2 binned  |
+                     * |    3 | 4056x3040           | 4:3          | 0.005-10fps | Full    | None        |
+                     * |    4 | 1332x990            | 74:55        | 50.1-120fps | Partial | 2x2 binned  |
                      *
                      */
                     ...(this.options.sensorMode ? ['--mode', this.options.sensorMode.toString()] : []),
@@ -165,8 +179,7 @@ class StreamCamera extends events_1.EventEmitter {
     /**
      * @TODO
      */
-    stopPreview() {
-    }
+    stopPreview() { }
 }
 StreamCamera.jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 exports.default = StreamCamera;
