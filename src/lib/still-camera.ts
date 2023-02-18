@@ -145,21 +145,19 @@ class StillCamera extends EventEmitter {
     }
   }
 
-  private startPreview(): Promise<void> {
+  private async startPreview(): Promise<void> {
     this.livePreview = true;
 
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise((resolve, reject) => {
-      // TODO: refactor promise logic to be more ergonomic
-      // so that we don't need to try/catch here
-      try {
+    try {
+      // eslint-disable-next-line no-async-promise-executor
+      return await new Promise((resolve, reject) => {
+        // TODO: refactor promise logic to be more ergonomic
+        // so that we don't need to try/catch here
         // Spawn child process
         this.childProcess = spawn('raspistill', this.args);
 
         // Listen for error event to reject promise
-        this.childProcess.once('error', () =>
-          reject(new Error('Could not start preview with StillCamera')),
-        );
+        this.childProcess.once('error', err => reject(err));
 
         // Wait for first data event to resolve promise
         this.childProcess.stdout.once('data', () => resolve());
@@ -201,10 +199,17 @@ class StillCamera extends EventEmitter {
 
         // Listen for close events
         this.childProcess.stdout.on('close', () => this.emit('close'));
-      } catch (err) {
-        this.emit('error', err);
-      }
-    });
+      });
+    } catch (err) {
+      this.emit(
+        'error',
+        err.code === 'ENOENT'
+          ? new Error(
+              "Could not initialize the preview with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+            )
+          : err,
+      );
+    }
   }
 
   async takeImage() {
