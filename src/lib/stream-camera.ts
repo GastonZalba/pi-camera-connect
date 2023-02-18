@@ -67,6 +67,8 @@ export interface StreamOptions {
 declare interface StreamCamera {
   on(event: 'frame', listener: (image: Buffer) => void): this;
   once(event: 'frame', listener: (image: Buffer) => void): this;
+  on(event: 'error', listener: (error: Error) => void): this;
+  once(event: 'error', listener: (error: Error) => void): this;
 }
 
 class StreamCamera extends EventEmitter {
@@ -95,7 +97,7 @@ class StreamCamera extends EventEmitter {
 
   startCapture(): Promise<void> {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       // TODO: refactor promise logic to be more ergonomic
       // so that we don't need to try/catch here
       try {

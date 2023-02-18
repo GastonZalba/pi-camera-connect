@@ -50,21 +50,31 @@ export interface StillOptions {
   displayNumber?: DisplayNumber;
 }
 
-export default class StillCamera extends EventEmitter {
-  private readonly options: StillOptions;
+declare interface StillCamera {
+  on(event: 'frame', listener: (image: Buffer) => void): this;
+  once(event: 'frame', listener: (image: Buffer) => void): this;
+  on(event: 'error', listener: (error: Error) => void): this;
+  once(event: 'error', listener: (error: Error) => void): this;
+}
+
+class StillCamera extends EventEmitter {
+  private options: StillOptions = {};
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
 
-  public livePreview: boolean;
+  public livePreview: boolean = false;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
-  private readonly args: Array<string>;
+  private args: Array<string> = [];
 
   // static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 
   constructor(options: StillOptions = {}) {
     super();
+    this.init(options);
+  }
 
+  private init(options: StillOptions) {
     this.options = {
       rotation: Rotation.Rotate0,
       flip: Flip.None,
@@ -72,7 +82,10 @@ export default class StillCamera extends EventEmitter {
       ...options,
     };
 
-    this.livePreview = !!this.options.showPreview;
+    // clean previous childProcess
+    if (this.livePreview) {
+      this.stopPreview();
+    }
 
     this.args = [
       /**
@@ -127,37 +140,16 @@ export default class StillCamera extends EventEmitter {
       '-',
     ];
 
-    if (this.livePreview) {
+    if (this.options.showPreview) {
       this.startPreview();
     }
   }
 
-  async takeImage() {
-    try {
-      if (this.livePreview) {
-        return await new Promise<Buffer>(resolve => {
-          this.once('frame', data => resolve(data));
-          if (this.childProcess) {
-            this.childProcess.stdin.write('-');
-            this.childProcess.stdin.end();
-          }
-        });
-      }
-      return await spawnPromise('raspistill', this.args);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        throw new Error(
-          "Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
-        );
-      }
-
-      throw err;
-    }
-  }
-
   private startPreview(): Promise<void> {
+    this.livePreview = true;
+
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       // TODO: refactor promise logic to be more ergonomic
       // so that we don't need to try/catch here
       try {
@@ -210,12 +202,39 @@ export default class StillCamera extends EventEmitter {
         // Listen for close events
         this.childProcess.stdout.on('close', () => this.emit('close'));
       } catch (err) {
-        return reject(err);
+        this.emit('error', err);
       }
     });
   }
 
-  async stopPreview() {
+  async takeImage() {
+    try {
+      if (this.livePreview) {
+        return await new Promise<Buffer>(resolve => {
+          this.once('frame', data => resolve(data));
+          if (this.childProcess) {
+            this.childProcess.stdin.write('-');
+            this.childProcess.stdin.end();
+          }
+        });
+      }
+      return await spawnPromise('raspistill', this.args);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        throw new Error(
+          "Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+        );
+      }
+      this.emit('error', err);
+      throw err;
+    }
+  }
+
+  updateOptions(options: StillOptions) {
+    this.init(options);
+  }
+
+  stopPreview() {
     if (!this.livePreview) return;
 
     if (this.childProcess) {
@@ -231,3 +250,5 @@ export default class StillCamera extends EventEmitter {
     this.livePreview = false;
   }
 }
+
+export default StillCamera;
