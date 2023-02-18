@@ -30,7 +30,7 @@ class StreamCamera extends events_1.EventEmitter {
     }
     startCapture() {
         // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             // TODO: refactor promise logic to be more ergonomic
             // so that we don't need to try/catch here
             try {

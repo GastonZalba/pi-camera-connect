@@ -52,6 +52,8 @@ export interface StreamOptions {
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;
     once(event: 'frame', listener: (image: Buffer) => void): this;
+    on(event: 'error', listener: (error: Error) => void): this;
+    once(event: 'error', listener: (error: Error) => void): this;
 }
 declare class StreamCamera extends EventEmitter {
     private readonly options;

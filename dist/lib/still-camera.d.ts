@@ -35,15 +35,24 @@ export interface StillOptions {
     opacityPreview?: number;
     displayNumber?: DisplayNumber;
 }
-export default class StillCamera extends EventEmitter {
-    private readonly options;
+declare interface StillCamera {
+    on(event: 'frame', listener: (image: Buffer) => void): this;
+    once(event: 'frame', listener: (image: Buffer) => void): this;
+    on(event: 'error', listener: (error: Error) => void): this;
+    once(event: 'error', listener: (error: Error) => void): this;
+}
+declare class StillCamera extends EventEmitter {
+    private options;
     static readonly jpegSignature: Buffer;
     livePreview: boolean;
     private childProcess?;
     private streams;
-    private readonly args;
+    private args;
     constructor(options?: StillOptions);
-    takeImage(): Promise<Buffer>;
+    private init;
     private startPreview;
-    stopPreview(): Promise<void>;
+    takeImage(): Promise<Buffer>;
+    updateOptions(options: StillOptions): void;
+    stopPreview(): void;
 }
+export default StillCamera;

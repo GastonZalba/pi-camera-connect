@@ -9,9 +9,18 @@ class StillCamera extends events_1.EventEmitter {
     // static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
     constructor(options = {}) {
         super();
+        this.options = {};
+        this.livePreview = false;
         this.streams = [];
+        this.args = [];
+        this.init(options);
+    }
+    init(options) {
         this.options = Object.assign({ rotation: __1.Rotation.Rotate0, flip: __1.Flip.None, delay: 1 }, options);
-        this.livePreview = !!this.options.showPreview;
+        // clean previous childProcess
+        if (this.livePreview) {
+            this.stopPreview();
+        }
         this.args = [
             /**
              * Add the command-line arguments that are common to both `raspivid` and `raspistill`
@@ -58,33 +67,14 @@ class StillCamera extends events_1.EventEmitter {
             '--output',
             '-',
         ];
-        if (this.livePreview) {
+        if (this.options.showPreview) {
             this.startPreview();
         }
     }
-    async takeImage() {
-        try {
-            if (this.livePreview) {
-                return await new Promise(resolve => {
-                    this.once('frame', data => resolve(data));
-                    if (this.childProcess) {
-                        this.childProcess.stdin.write('-');
-                        this.childProcess.stdin.end();
-                    }
-                });
-            }
-            return await util_1.spawnPromise('raspistill', this.args);
-        }
-        catch (err) {
-            if (err.code === 'ENOENT') {
-                throw new Error("Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?");
-            }
-            throw err;
-        }
-    }
     startPreview() {
+        this.livePreview = true;
         // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             // TODO: refactor promise logic to be more ergonomic
             // so that we don't need to try/catch here
             try {
@@ -122,11 +112,35 @@ class StillCamera extends events_1.EventEmitter {
                 this.childProcess.stdout.on('close', () => this.emit('close'));
             }
             catch (err) {
-                return reject(err);
+                this.emit('error', err);
             }
         });
     }
-    async stopPreview() {
+    async takeImage() {
+        try {
+            if (this.livePreview) {
+                return await new Promise(resolve => {
+                    this.once('frame', data => resolve(data));
+                    if (this.childProcess) {
+                        this.childProcess.stdin.write('-');
+                        this.childProcess.stdin.end();
+                    }
+                });
+            }
+            return await util_1.spawnPromise('raspistill', this.args);
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                throw new Error("Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?");
+            }
+            this.emit('error', err);
+            throw err;
+        }
+    }
+    updateOptions(options) {
+        this.init(options);
+    }
+    stopPreview() {
         if (!this.livePreview)
             return;
         if (this.childProcess) {
@@ -139,6 +153,6 @@ class StillCamera extends events_1.EventEmitter {
         this.livePreview = false;
     }
 }
-exports.default = StillCamera;
 StillCamera.jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
+exports.default = StillCamera;
 //# sourceMappingURL=still-camera.js.map
