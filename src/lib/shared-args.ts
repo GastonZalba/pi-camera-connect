@@ -183,5 +183,10 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
      * Display on which to display the preview window (dispmanx/tvservice numbering)
      */
     ...(options.displayNumber ? ['--dispnum', options.displayNumber.toString()] : []),
+
+    /**
+     * Sets the opacity of the preview windows. 0 = invisible, 255 = fully opaque
+     */
+    ...(options.opacityPreview ? ['--opacity', options.opacityPreview.toString()] : []),
   ];
 }

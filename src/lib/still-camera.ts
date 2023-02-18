@@ -72,7 +72,7 @@ export default class StillCamera extends EventEmitter {
       ...options,
     };
 
-    this.livePreview = this.options.showPreview !== false;
+    this.livePreview = !!this.options.showPreview;
 
     this.args = [
       /**
@@ -85,11 +85,6 @@ export default class StillCamera extends EventEmitter {
        */
       '--timeout',
       this.options.delay!.toString(),
-
-      /**
-       * Do not display preview overlay on screen
-       */
-      '--nopreview',
 
       /**
        * RAW (Save Bayer Data)
@@ -131,12 +126,16 @@ export default class StillCamera extends EventEmitter {
       '--output',
       '-',
     ];
+
+    if (this.livePreview) {
+      this.startPreview();
+    }
   }
 
   async takeImage() {
     try {
       if (this.livePreview) {
-        return new Promise<Buffer>(resolve => {
+        return await new Promise<Buffer>(resolve => {
           this.once('frame', data => resolve(data));
           if (this.childProcess) {
             this.childProcess.stdin.write('-');
@@ -156,18 +155,14 @@ export default class StillCamera extends EventEmitter {
     }
   }
 
-  startPreview(preview: [number, number, number, number]): Promise<void> {
-    this.livePreview = true;
-
+  private startPreview(): Promise<void> {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       // TODO: refactor promise logic to be more ergonomic
       // so that we don't need to try/catch here
       try {
-        const args = [...this.args, '--preview', preview.toString(), '--keypress'];
-
         // Spawn child process
-        this.childProcess = spawn('raspistill', args);
+        this.childProcess = spawn('raspistill', this.args);
 
         // Listen for error event to reject promise
         this.childProcess.once('error', () =>

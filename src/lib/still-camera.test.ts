@@ -26,8 +26,9 @@ test('takeImage() returns JPEG', async () => {
 test('takeImage with live preview, returns JPEG', async () => {
   const t0 = performance.now();
 
-  const stillCamera = new StillCamera();
-  stillCamera.startPreview([100, 100, 100, 100]);
+  const stillCamera = new StillCamera({
+    showPreview: [100, 100, 100, 100],
+  });
 
   const jpegImage = await stillCamera.takeImage();
   const t1 = performance.now();
