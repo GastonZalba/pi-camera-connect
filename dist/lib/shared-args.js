@@ -138,7 +138,7 @@ function getSharedArgs(options) {
          * the top left corner, and a width and height, all values in
          * normalised coordinates (0.0-1.0).
          */
-        ...(options.roi ? ['--roi', options.toString()] : []),
+        ...(options.roi ? ['--roi', options.roi.toString()] : []),
         /**
          * Preview Window Control
          * Sets the size of the preview window and where it appears.
