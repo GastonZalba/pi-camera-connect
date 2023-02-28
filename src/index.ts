@@ -89,7 +89,7 @@ export enum FlickerMode {
 }
 
 export enum DisplayNumber {
-  'DSI/DPI LCD' = 0,
+  DSI_DPILCD = 0,
   HDMI0 = 2,
   SDTV = 3,
   HDMI1 = 7,
