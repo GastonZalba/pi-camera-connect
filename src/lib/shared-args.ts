@@ -109,7 +109,7 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
     /**
      * Image Effect
      */
-    ...(options.imageEffect ? ['--imxfx', options.imageEffect.toString()] : []),
+    ...(options.imageEffectMode ? ['--imxfx', options.imageEffectMode.toString()] : []),
 
     /**
      * Dynamic Range Control
@@ -117,12 +117,12 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
     ...(options.dynamicRange ? ['--drc', options.dynamicRange] : []),
 
     /**
-     * Colour Effects
+     * Color Effects
      * The supplied U and V parameters (range 0 to 255) are applied to
      * the U and Y channels of the image. For example, --colfx 128:128
      * should result in a monochrome image.
      */
-    ...(options.colourEffect ? ['--colfx', options.colourEffect.join(':')] : []),
+    ...(options.colorEffect ? ['--colfx', options.colorEffect.join(':')] : []),
 
     /**
      * Metering
@@ -144,10 +144,10 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
     ...(options.flickerMode ? ['--flicker', options.flickerMode] : []),
 
     /**
-     * Video Stabilisation
+     * Video Stabilization
      * In video mode only, turn on video stabilization.
      */
-    ...(options.videoStabilisation ? ['--vstab'] : []),
+    ...(options.videoStabilization ? ['--vstab'] : []),
 
     /** Statistics
      * Force recomputation of statistics on stills capture pass. Digital gain and AWB are
@@ -188,5 +188,18 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
      * Sets the opacity of the preview windows. 0 = invisible, 255 = fully opaque
      */
     ...(options.opacityPreview ? ['--opacity', options.opacityPreview.toString()] : []),
+
+    /**
+     * Annotate
+     * Adds some text and/or metadata to the picture.
+     */
+    ...(options.annotate ? options.annotate.flatMap(e => ['--annotate', e.toString()]) : []),
+
+    /**
+     * Annotate extra
+     * Specifies annotation size, text colour, and background color.
+     * Colors are in hex YUV format. Size ranges from 6 - 160; default is 32
+     */
+    ...(options.annotateExtra ? ['--annotateex', options.annotateExtra.toString()] : []),
   ];
 }

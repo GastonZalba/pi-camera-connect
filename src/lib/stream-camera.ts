@@ -8,7 +8,7 @@ import {
   ExposureMode,
   FlickerMode,
   Flip,
-  ImxfxMode,
+  ImageEffectMode,
   MeteringMode,
   Rotation,
 } from '..';
@@ -51,10 +51,10 @@ export interface StreamOptions {
   awbGains?: [number, number];
   analogGain?: number;
   digitalGain?: number;
-  imageEffect?: ImxfxMode;
-  colourEffect?: [number, number]; // U,V
+  imageEffectMode?: ImageEffectMode;
+  colorEffect?: [number, number]; // U,V
   dynamicRange?: DynamicRange;
-  videoStabilisation?: boolean;
+  videoStabilization?: boolean;
   statistics?: boolean;
   meteringMode?: MeteringMode;
   flickerMode?: FlickerMode;
@@ -62,6 +62,8 @@ export interface StreamOptions {
   showPreview?: [number, number, number, number] | 'fullscreen' | false; // X,Y,W,H
   opacityPreview?: number;
   displayNumber?: DisplayNumber;
+  annotate?: (number | string)[];
+  annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
 }
 
 declare interface StreamCamera {
@@ -72,16 +74,18 @@ declare interface StreamCamera {
 }
 
 class StreamCamera extends EventEmitter {
-  private readonly options: StreamOptions;
+  private options: StreamOptions;
+  private showPreview: boolean = false;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
-  public readonly livePreview: boolean;
+  private args: Array<string> = [];
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x84, 0x00]);
 
   constructor(options: StreamOptions = {}) {
     super();
 
+    // defaults
     this.options = {
       rotation: Rotation.Rotate0,
       flip: Flip.None,
@@ -89,117 +93,122 @@ class StreamCamera extends EventEmitter {
       fps: 30,
       codec: Codec.H264,
       sensorMode: SensorMode.AutoSelect,
+    };
+
+    this.setOptions(options);
+  }
+
+  setOptions(options: StreamOptions): void {
+    this.options = {
       ...options,
     };
 
-    this.livePreview = this.options.showPreview !== false;
+    // clean previous childProcess
+    if (this.showPreview) {
+      this.stopPreview();
+    }
+
+    this.args = [
+      /**
+       * Add the command-line arguments that are common to both `raspivid` and `raspistill`
+       */
+      ...getSharedArgs(this.options),
+
+      /**
+       * Bit rate
+       */
+      ...(this.options.bitRate ? ['--bitrate', this.options.bitRate.toString()] : []),
+
+      /**
+       * Frame rate
+       */
+      ...(this.options.fps ? ['--framerate', this.options.fps.toString()] : []),
+
+      /**
+       * Codec
+       *
+       * H264 or MJPEG
+       *
+       */
+      ...(this.options.codec ? ['--codec', this.options.codec.toString()] : []),
+
+      /**
+       * Sensor mode
+       *
+       * Camera version 1.x (OV5647):
+       *
+       * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   |    Binning    |
+       * |------|---------------------|--------------|-------------|---------|---------------|
+       * |    0 | automatic selection |              |             |         |               |
+       * |    1 | 1920x1080           | 16:9         | 1-30fps     | Partial | None          |
+       * |    2 | 2592x1944           | 4:3          | 1-15fps     | Full    | None          |
+       * |    3 | 2592x1944           | 4:3          | 0.1666-1fps | Full    | None          |
+       * |    4 | 1296x972            | 4:3          | 1-42fps     | Full    | 2x2           |
+       * |    5 | 1296x730            | 16:9         | 1-49fps     | Full    | 2x2           |
+       * |    6 | 640x480             | 4:3          | 42.1-60fps  | Full    | 2x2 plus skip |
+       * |    7 | 640x480             | 4:3          | 60.1-90fps  | Full    | 2x2 plus skip |
+       *
+       *
+       * Camera version 2.x (IMX219):
+       *
+       * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   | Binning |
+       * |------|---------------------|--------------|-------------|---------|---------|
+       * |    0 | automatic selection |              |             |         |         |
+       * |    1 | 1920x1080           | 16:9         | 0.1-30fps   | Partial | None    |
+       * |    2 | 3280x2464           | 4:3          | 0.1-15fps   | Full    | None    |
+       * |    3 | 3280x2464           | 4:3          | 0.1-15fps   | Full    | None    |
+       * |    4 | 1640x1232           | 4:3          | 0.1-40fps   | Full    | 2x2     |
+       * |    5 | 1640x922            | 16:9         | 0.1-40fps   | Full    | 2x2     |
+       * |    6 | 1280x720            | 16:9         | 40-90fps    | Partial | 2x2     |
+       * |    7 | 640x480             | 4:3          | 40-200fps*  | Partial | 2x2     |
+       *
+       * *For frame rates over 120fps, it is necessary to turn off automatic exposure and gain
+       * control using -ex off. Doing so should achieve the higher frame rates, but exposure
+       * time and gains will need to be set to fixed values supplied by the user.
+       *
+       *
+       * HQ Camera (IMX477):
+       *
+       * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   |   Binning   |
+       * |------|---------------------|--------------|-------------|---------|-------------|
+       * |    0 | automatic selection |              |             |         |             |
+       * |    1 | 2028x1080           | 169:90       | 0.1-50fps   | Partial | 2x2 binned  |
+       * |    2 | 2028x1520           | 4:3          | 0.1-50fps   | Full    | 2x2 binned  |
+       * |    3 | 4056x3040           | 4:3          | 0.005-10fps | Full    | None        |
+       * |    4 | 1332x990            | 74:55        | 50.1-120fps | Partial | 2x2 binned  |
+       *
+       */
+      ...(this.options.sensorMode ? ['--mode', this.options.sensorMode.toString()] : []),
+
+      /**
+       * Capture time (ms)
+       *
+       * Zero = forever
+       *
+       */
+      '--timeout',
+      (0).toString(),
+
+      /**
+       * Output to stdout
+       */
+      '--output',
+      '-',
+    ];
+
+    if (this.options.showPreview) {
+      this.startPreview();
+    }
   }
 
   startCapture(): Promise<void> {
-    // eslint-disable-next-line no-async-promise-executor
     return new Promise((resolve, reject) => {
       // TODO: refactor promise logic to be more ergonomic
       // so that we don't need to try/catch here
       try {
-        const args: Array<string> = [
-          /**
-           * Add the command-line arguments that are common to both `raspivid` and `raspistill`
-           */
-          ...getSharedArgs(this.options),
-
-          /**
-           * Bit rate
-           */
-          ...(this.options.bitRate ? ['--bitrate', this.options.bitRate.toString()] : []),
-
-          /**
-           * Frame rate
-           */
-          ...(this.options.fps ? ['--framerate', this.options.fps.toString()] : []),
-
-          /**
-           * Codec
-           *
-           * H264 or MJPEG
-           *
-           */
-          ...(this.options.codec ? ['--codec', this.options.codec.toString()] : []),
-
-          /**
-           * Sensor mode
-           *
-           * Camera version 1.x (OV5647):
-           *
-           * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   |    Binning    |
-           * |------|---------------------|--------------|-------------|---------|---------------|
-           * |    0 | automatic selection |              |             |         |               |
-           * |    1 | 1920x1080           | 16:9         | 1-30fps     | Partial | None          |
-           * |    2 | 2592x1944           | 4:3          | 1-15fps     | Full    | None          |
-           * |    3 | 2592x1944           | 4:3          | 0.1666-1fps | Full    | None          |
-           * |    4 | 1296x972            | 4:3          | 1-42fps     | Full    | 2x2           |
-           * |    5 | 1296x730            | 16:9         | 1-49fps     | Full    | 2x2           |
-           * |    6 | 640x480             | 4:3          | 42.1-60fps  | Full    | 2x2 plus skip |
-           * |    7 | 640x480             | 4:3          | 60.1-90fps  | Full    | 2x2 plus skip |
-           *
-           *
-           * Camera version 2.x (IMX219):
-           *
-           * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   | Binning |
-           * |------|---------------------|--------------|-------------|---------|---------|
-           * |    0 | automatic selection |              |             |         |         |
-           * |    1 | 1920x1080           | 16:9         | 0.1-30fps   | Partial | None    |
-           * |    2 | 3280x2464           | 4:3          | 0.1-15fps   | Full    | None    |
-           * |    3 | 3280x2464           | 4:3          | 0.1-15fps   | Full    | None    |
-           * |    4 | 1640x1232           | 4:3          | 0.1-40fps   | Full    | 2x2     |
-           * |    5 | 1640x922            | 16:9         | 0.1-40fps   | Full    | 2x2     |
-           * |    6 | 1280x720            | 16:9         | 40-90fps    | Partial | 2x2     |
-           * |    7 | 640x480             | 4:3          | 40-200fps*  | Partial | 2x2     |
-           *
-           * *For frame rates over 120fps, it is necessary to turn off automatic exposure and gain
-           * control using -ex off. Doing so should achieve the higher frame rates, but exposure
-           * time and gains will need to be set to fixed values supplied by the user.
-           *
-           *
-           * HQ Camera (IMX477):
-           *
-           * | Mode |        Size         | Aspect Ratio | Frame rates |   FOV   |   Binning   |
-           * |------|---------------------|--------------|-------------|---------|-------------|
-           * |    0 | automatic selection |              |             |         |             |
-           * |    1 | 2028x1080           | 169:90       | 0.1-50fps   | Partial | 2x2 binned  |
-           * |    2 | 2028x1520           | 4:3          | 0.1-50fps   | Full    | 2x2 binned  |
-           * |    3 | 4056x3040           | 4:3          | 0.005-10fps | Full    | None        |
-           * |    4 | 1332x990            | 74:55        | 50.1-120fps | Partial | 2x2 binned  |
-           *
-           */
-          ...(this.options.sensorMode ? ['--mode', this.options.sensorMode.toString()] : []),
-
-          /**
-           * Capture time (ms)
-           *
-           * Zero = forever
-           *
-           */
-          '--timeout',
-          (0).toString(),
-
-          /**
-           * Output to stdout
-           */
-          '--output',
-          '-',
-        ];
-
-        // Spawn child process
-        this.childProcess = spawn('raspivid', args);
-
-        // Listen for error event to reject promise
-        this.childProcess.once('error', () =>
-          reject(
-            new Error(
-              "Could not start capture with StreamCamera. Are you running on a Raspberry Pi with 'raspivid' installed?",
-            ),
-          ),
-        );
+        if (!this.childProcess) {
+          this.childProcess = this.initChildProcess();
+        }
 
         // Wait for first data event to resolve promise
         this.childProcess.stdout.once('data', () => resolve());
@@ -236,22 +245,49 @@ class StreamCamera extends EventEmitter {
           }
         });
 
-        // Listen for error events
-        this.childProcess.stdout.on('error', err => this.emit('error', err));
-        this.childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
-        this.childProcess.stderr.on('error', err => this.emit('error', err));
-
-        // Listen for close events
-        this.childProcess.stdout.on('close', () => this.emit('close'));
+        if (this.showPreview) {
+          // send character to init the capture
+          this.childProcess.stdin.write('-');
+          this.childProcess.stdin.end();
+        }
       } catch (err) {
         return reject(err);
       }
     });
   }
 
-  async stopCapture() {
+  private initChildProcess(): ChildProcessWithoutNullStreams {
+    // Spawn child process
+    const childProcess = spawn('raspivid', this.args);
+
+    // Listen for error event to reject promise
+    childProcess.once('error', () => {
+      throw new Error(
+        "Could not start StreamCamera. Are you running on a Raspberry Pi with 'raspivid' installed?",
+      );
+    });
+
+    // Listen for error events
+    childProcess.stdout.on('error', err => this.emit('error', err));
+    childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
+    childProcess.stderr.on('error', err => this.emit('error', err));
+
+    // Listen for close events
+    childProcess.stdout.on('close', () => this.emit('close'));
+
+    return childProcess;
+  }
+
+  stopCapture(): void {
     if (this.childProcess) {
-      this.childProcess.kill();
+      // If preview is active, don't kill the process, only stop the capture
+      if (this.showPreview) {
+        // send character to init the capture
+        this.childProcess.stdin.write('-');
+        this.childProcess.stdin.end();
+      } else {
+        this.childProcess.kill();
+      }
     }
 
     // Push null to each stream to indicate EOF
@@ -261,7 +297,7 @@ class StreamCamera extends EventEmitter {
     this.streams = [];
   }
 
-  createStream() {
+  createStream(): stream.Readable {
     const newStream = new stream.Readable({
       read: () => {},
     });
@@ -271,16 +307,24 @@ class StreamCamera extends EventEmitter {
     return newStream;
   }
 
-  takeImage() {
+  takeImage(): Promise<Buffer> {
     if (this.options.codec !== Codec.MJPEG) throw new Error("Codec must be 'MJPEG' to take image");
 
     return new Promise<Buffer>(resolve => this.once('frame', data => resolve(data)));
   }
 
-  /**
-   * @TODO
-   */
-  stopPreview() {}
+  private startPreview(): void {
+    this.childProcess = this.initChildProcess();
+    this.showPreview = true;
+  }
+
+  stopPreview(): void {
+    if (!this.showPreview || !this.childProcess) return;
+
+    this.childProcess.kill();
+
+    this.showPreview = false;
+  }
 }
 
 export default StreamCamera;

@@ -20,11 +20,15 @@ test('Method takeImage() grabs JPEG from MJPEG stream', async () => {
 
   const jpegImage = await streamCamera.takeImage();
 
-  await streamCamera.stopCapture();
+  streamCamera.stopCapture();
   const t1 = performance.now();
 
   const time = ((t1 - t0) / 1000).toFixed(2);
-  await fs.promises.writeFile(`test_images/streamCapture_(${time}-secs).jpeg`, jpegImage, 'binary');
+  await fs.promises.writeFile(
+    `${TEST_IMAGES_DIR}/streamCapture_(${time}-secs).jpeg`,
+    jpegImage,
+    'binary',
+  );
 
   expect(jpegImage.indexOf(StreamCamera.jpegSignature)).toBe(0);
 });
@@ -39,11 +43,11 @@ test('Method createStream() returns a stream of video data', async () => {
   const videoStream = streamCamera.createStream();
 
   // Wait 300 ms for data to arrive
-  await new Promise(resolve => setTimeout(() => resolve(), 300));
+  await new Promise(resolve => setTimeout(() => resolve(null), 300));
 
   const data = videoStream.read();
 
-  await streamCamera.stopCapture();
+  streamCamera.stopCapture();
 
   expect(data).not.toBeNull();
   expect(data.length).toBeGreaterThan(0);
@@ -60,12 +64,12 @@ test('StreamCamera can push to multiple streams', async () => {
   const videoStream2 = streamCamera.createStream();
 
   // Wait 300 ms for data to arrive
-  await new Promise(resolve => setTimeout(() => resolve(), 300));
+  await new Promise(resolve => setTimeout(() => resolve(null), 300));
 
   const data1 = videoStream1.read();
   const data2 = videoStream2.read();
 
-  await streamCamera.stopCapture();
+  streamCamera.stopCapture();
 
   expect(data1).not.toBeNull();
   expect(data1.length).toBeGreaterThan(0);
@@ -89,10 +93,10 @@ test('Method stopCapture() ends all streams', async () => {
   videoStream1.resume();
   videoStream2.resume();
 
-  const stream1EndPromise = new Promise(resolve => videoStream1.on('end', () => resolve()));
-  const stream2EndPromise = new Promise(resolve => videoStream2.on('end', () => resolve()));
+  const stream1EndPromise = new Promise(resolve => videoStream1.on('end', () => resolve(null)));
+  const stream2EndPromise = new Promise(resolve => videoStream2.on('end', () => resolve(null)));
 
-  await streamCamera.stopCapture();
+  streamCamera.stopCapture();
 
   return Promise.all([
     expect(stream1EndPromise).resolves.toBeUndefined(),

@@ -231,7 +231,7 @@ Note that this example produces a raw H264 video. Wrapping it in a video contain
 - [`ExposureMode`](#exposuremode)
 - [`AwbMode`](#awbmode)
 - [`DynamicRange`](#dynamicRange)
-- [`ImageEffect`](#imageEffect)
+- [`ImageEffectMode`](#imageEffectMode)
 
 ## `StillCamera`
 
@@ -263,21 +263,25 @@ const stillCamera = new StillCamera({
 - `exposureCompensation: number` - _Range: `-10`-`10`; Default: `0`_
 - [`exposureMode: ExposureMode`](#exposuremode) - _Default: `ExposureMode.Auto`_
 - [`awbMode: AwbMode`](#awbmode) - _Default: `AwbMode.Auto`_
-- `awbGains: [number, number]` - _Default: `null`_
-- `analogGain: number` - _Default: `0`_
-- `digitalGain: number` - _Default: `0`_
-- `quality: number` - _Default: `100`_
-- `colourEffect: [number, number]` - _Default: `[0,0]`_
-- [`imageEffect: ImxfxMode`](#imageeffect) - _Default: `ImxfxMode.None`_
+- `awbGains: [number, number]` - _Range: `0.0`-`8.0`; Default: `undefined`_
+- `analogGain: number` - _Range: `1.0`-`12.0` (OV5647: `1.0`-`8.0`); Default: `0`_
+- `digitalGain: number` - _Range: `1.0`-`64.0`; Default: `0`_
+- `quality: number` - _Range: `0`-`100`; Default: `100`_
+- `colorEffect: [number, number]` <small>(U, V)</small> - _Range: `0-255`; Default: `undefined`_
+- [`imageEffectMode: ImageEffectMode`](#imageeffectmode) - _Default: `ImageEffectMode.None`_
 - [`dynamicRange: DynamicRange`](#dynamicrange) - _Default: `DynamicRange.Off`_
-- `videoStabilisation: boolean` - _Default: `false`_
+- `videoStabilization: boolean` - _Default: `false`_
 - `raw: boolean` - _Default: `false`_
 - [`meteringMode`](#meteringMode) - _Default: `MeteringMode.Off`_
-- `thumbnail: [number, number, number] | 'none'` - _Default: `[64, 48, 35]`_
-- [`flickerMode`](#flickerMode) - _Default: `null`_
+- `thumbnail: [number, number, number] | false` <small>(X, Y, Q)</small> - _Default: `[64, 48, 35]`; `false` to dismiss thumbnail_
+- [`flickerMode`](#flickerMode) - _Default: `FlickerMode.Off`_
 - `burst: boolean` - _Default: `false`_
-- `roi: [number, number, number, number]` - _Default: `null`_
+- `roi: [number, number, number, number]` <small>(X, Y, W, H)</small> - _Range: `0.0`-`1.0`; Default: `[0, 0, 1, 1]` (Full sensor)_
 - `statistics: boolean` - _Default: `false`_
+- `exif: { [key:string]: string | number } | false` - _Default: Default camera values; `false` to dissmis default exif_
+- `gpsExif: boolean` - _Default: `false`_
+- `annotate: (number | string)[]` - _Default: No annotations_
+- `annotateExtra: [number, string, string]` <small>(fontSize, fontColor, backgroundColor)</small> - _Default: `[32, '0xff', '0x808000']`_
 
 ### `StillCamera.takeImage(): Promise<Buffer>`
 
@@ -322,17 +326,19 @@ const streamCamera = new StreamCamera({
 - `exposureCompensation: number` - _Range: `-10`-`10`; Default: `0`_
 - [`exposureMode: ExposureMode`](#exposuremode) - _Default: `ExposureMode.Auto`_
 - [`awbMode: AwbMode`](#awbmode) - _Default: `AwbMode.Auto`_
-- `awbGains: [number, number]` - _Default: `null`_
-- `analogGain: number` - _Default: `0`_
-- `digitalGain: number` - _Default: `0`_
-- `colourEffect: [number, number]` - _Default: `[0,0]`_
-- [`imageEffect: ImxfxMode`](#imageeffect) - _Default: `ImxfxMode.None`_
+- `awbGains: [number, number]` - _Range: `0.0`-`8.0`; Default: `undefined`_
+- `analogGain: number` - _Range: `1.0`-`12.0` (OV5647: `1.0`-`8.0`); Default: `0`_
+- `digitalGain: number` - _Range: `1.0`-`64.0`; Default: `0`_
+- `colorEffect: [number, number]` <small>(U, V)</small> - _Range: `0-255`; Default: `undefined`_
+- [`imageEffectMode: ImageEffectMode`](#imageeffectmode) - _Default: `ImageEffectMode.None`_
 - [`dynamicRange: DynamicRange`](#dynamicrange) - _Default: `DynamicRange.Off`_
-- `videoStabilisation: boolean` - _Default: `false`_
+- `videoStabilization: boolean` - _Default: `false`_
 - [`meteringMode`](#meteringMode) - _Default: `MeteringMode.Off`_
-- [`flickerMode`](#flickerMode) - _Default: `null`_
-- `roi: [number, number, number, number]` - _Default: `null`_
+- [`flickerMode`](#flickerMode) - _Default: `FlickerMode.Off`_
+- `roi: [number, number, number, number]` <small>(X, Y, W, H)</small> - _Range: `0.0`-`1.0`; Default: `[0, 0, 1, 1]` (Full sensor)_
 - `statistics: boolean` - _Default: `false`_
+- `annotate: (number | string)[]` - _Default: No annotations_
+- `annotateExtra: [number, string, string]` <small>(fontSize, fontColor, backgroundColor)</small> - _Default: `[32, '0xff', '0x808000']`_
 
 ### `startCapture(): Promise<void>`
 
@@ -526,33 +532,33 @@ White balance mode options.
 import { AwbMode } from 'pi-camera-connect';
 ```
 
-## `ImageEffect`
+## `ImageEffectMode`
 
 Image Effect options.
 
-- `ImxfxMode.None`
-- `ImxfxMode.Negative`
-- `ImxfxMode.Solarise`
-- `ImxfxMode.Sketch`
-- `ImxfxMode.Denoise`
-- `ImxfxMode.Emboss`
-- `ImxfxMode.OilPaint`
-- `ImxfxMode.Hatch`
-- `ImxfxMode.GPen`
-- `ImxfxMode.Pastel`
-- `ImxfxMode.Watercolour`
-- `ImxfxMode.Film`
-- `ImxfxMode.Blur`
-- `ImxfxMode.Saturation`
-- `ImxfxMode.ColourSwap`
-- `ImxfxMode.WashedOut`
-- `ImxfxMode.Posterise`
-- `ImxfxMode.ColourPoint`
-- `ImxfxMode.ColourBalance`
-- `ImxfxMode.Cartoon`
+- `ImageEffectMode.None`
+- `ImageEffectMode.Negative`
+- `ImageEffectMode.Solarise`
+- `ImageEffectMode.Sketch`
+- `ImageEffectMode.Denoise`
+- `ImageEffectMode.Emboss`
+- `ImageEffectMode.OilPaint`
+- `ImageEffectMode.Hatch`
+- `ImageEffectMode.GPen`
+- `ImageEffectMode.Pastel`
+- `ImageEffectMode.Watercolour`
+- `ImageEffectMode.Film`
+- `ImageEffectMode.Blur`
+- `ImageEffectMode.Saturation`
+- `ImageEffectMode.ColourSwap`
+- `ImageEffectMode.WashedOut`
+- `ImageEffectMode.Posterise`
+- `ImageEffectMode.ColourPoint`
+- `ImageEffectMode.ColourBalance`
+- `ImageEffectMode.Cartoon`
 
 ```javascript
-import { ImxfxMode } from 'pi-camera-connect';
+import { ImageEffectMode } from 'pi-camera-connect';
 ```
 
 ## `DynamicRange`
@@ -587,8 +593,8 @@ Dynamic Range options.
 
 - `FlickerMode.Off`
 - `FlickerMode.Auto`
-- `FlickerMode.50hz`
-- `FlickerMode.60hz`
+- `FlickerMode.Frq50hz`
+- `FlickerMode.Frq60hz`
 
 ```javascript
 import { FlickerMode } from 'pi-camera-connect';
