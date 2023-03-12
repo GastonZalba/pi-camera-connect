@@ -24,11 +24,12 @@ var SensorMode;
 class StreamCamera extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
+        this.options = {};
         this.showPreview = false;
         this.streams = [];
         this.args = [];
         // defaults
-        this.options = {
+        this.defaultOptions = {
             rotation: __1.Rotation.Rotate0,
             flip: __1.Flip.None,
             bitRate: 17000000,
@@ -39,7 +40,7 @@ class StreamCamera extends events_1.EventEmitter {
         this.setOptions(options);
     }
     setOptions(options) {
-        this.options = Object.assign({}, options);
+        this.options = Object.assign(Object.assign({}, this.defaultOptions), options);
         // clean previous childProcess
         if (this.showPreview) {
             this.stopPreview();

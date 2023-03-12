@@ -59,6 +59,7 @@ declare interface StreamCamera {
 }
 declare class StreamCamera extends EventEmitter {
     private options;
+    private readonly defaultOptions;
     private showPreview;
     private childProcess?;
     private streams;

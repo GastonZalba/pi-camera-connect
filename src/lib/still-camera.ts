@@ -61,7 +61,8 @@ declare interface StillCamera {
 }
 
 class StillCamera extends EventEmitter {
-  private options: StillOptions;
+  private options: StillOptions = {};
+  private readonly defaultOptions: StillOptions;
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
 
@@ -73,7 +74,7 @@ class StillCamera extends EventEmitter {
     super();
 
     // defaults
-    this.options = {
+    this.defaultOptions = {
       rotation: Rotation.Rotate0,
       flip: Flip.None,
       delay: 1,
@@ -84,6 +85,7 @@ class StillCamera extends EventEmitter {
 
   setOptions(options: StillOptions): void {
     this.options = {
+      ...this.defaultOptions,
       ...options,
     };
 

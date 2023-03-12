@@ -74,7 +74,8 @@ declare interface StreamCamera {
 }
 
 class StreamCamera extends EventEmitter {
-  private options: StreamOptions;
+  private options: StreamOptions = {};
+  private readonly defaultOptions: StreamOptions;
   private showPreview: boolean = false;
   private childProcess?: ChildProcessWithoutNullStreams;
   private streams: Array<stream.Readable> = [];
@@ -86,7 +87,7 @@ class StreamCamera extends EventEmitter {
     super();
 
     // defaults
-    this.options = {
+    this.defaultOptions = {
       rotation: Rotation.Rotate0,
       flip: Flip.None,
       bitRate: 17000000,
@@ -100,6 +101,7 @@ class StreamCamera extends EventEmitter {
 
   setOptions(options: StreamOptions): void {
     this.options = {
+      ...this.defaultOptions,
       ...options,
     };
 

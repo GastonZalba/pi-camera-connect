@@ -49,6 +49,7 @@ declare interface StillCamera {
 }
 declare class StillCamera extends EventEmitter {
     private options;
+    private readonly defaultOptions;
     static readonly jpegSignature: Buffer;
     private showPreview;
     private childProcess?;

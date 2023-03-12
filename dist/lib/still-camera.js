@@ -8,10 +8,11 @@ const shared_args_1 = require("./shared-args");
 class StillCamera extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
+        this.options = {};
         this.showPreview = false;
         this.args = [];
         // defaults
-        this.options = {
+        this.defaultOptions = {
             rotation: __1.Rotation.Rotate0,
             flip: __1.Flip.None,
             delay: 1,
@@ -19,7 +20,7 @@ class StillCamera extends events_1.EventEmitter {
         this.setOptions(options);
     }
     setOptions(options) {
-        this.options = Object.assign({}, options);
+        this.options = Object.assign(Object.assign({}, this.defaultOptions), options);
         // clean previous childProcess
         if (this.showPreview) {
             this.stopPreview();
