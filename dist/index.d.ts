@@ -40,7 +40,7 @@ export declare enum AwbMode {
     Horizon = "horizon",
     GreyWorld = "greyworld"
 }
-export declare enum ImxfxMode {
+export declare enum ImageEffectMode {
     None = "none",
     Negative = "negative",
     Solarise = "solarise",
@@ -77,11 +77,11 @@ export declare enum MeteringMode {
 export declare enum FlickerMode {
     Off = "off",
     Auto = "auto",
-    '50hz' = "50hz",
-    '60Hz' = "60hz"
+    Frq50hz = "50hz",
+    Frq60Hz = "60hz"
 }
 export declare enum DisplayNumber {
-    'DSI/DPI LCD' = 0,
+    DSI_DPILCD = 0,
     HDMI0 = 2,
     SDTV = 3,
     HDMI1 = 7

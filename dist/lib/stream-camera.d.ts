@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImxfxMode, MeteringMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, MeteringMode, Rotation } from '..';
 export declare enum Codec {
     H264 = "H264",
     MJPEG = "MJPEG"
@@ -37,10 +37,10 @@ export interface StreamOptions {
     awbGains?: [number, number];
     analogGain?: number;
     digitalGain?: number;
-    imageEffect?: ImxfxMode;
-    colourEffect?: [number, number];
+    imageEffectMode?: ImageEffectMode;
+    colorEffect?: [number, number];
     dynamicRange?: DynamicRange;
-    videoStabilisation?: boolean;
+    videoStabilization?: boolean;
     statistics?: boolean;
     meteringMode?: MeteringMode;
     flickerMode?: FlickerMode;
@@ -48,6 +48,8 @@ export interface StreamOptions {
     showPreview?: [number, number, number, number] | 'fullscreen' | false;
     opacityPreview?: number;
     displayNumber?: DisplayNumber;
+    annotate?: (number | string)[];
+    annotateExtra?: [number, string, string];
 }
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;
@@ -56,19 +58,20 @@ declare interface StreamCamera {
     once(event: 'error', listener: (error: Error) => void): this;
 }
 declare class StreamCamera extends EventEmitter {
-    private readonly options;
+    private options;
+    private showPreview;
     private childProcess?;
     private streams;
-    readonly livePreview: boolean;
+    private args;
     static readonly jpegSignature: Buffer;
     constructor(options?: StreamOptions);
+    setOptions(options: StreamOptions): void;
     startCapture(): Promise<void>;
-    stopCapture(): Promise<void>;
+    private initChildProcess;
+    stopCapture(): void;
     createStream(): stream.Readable;
     takeImage(): Promise<Buffer>;
-    /**
-     * @TODO
-     */
+    private startPreview;
     stopPreview(): void;
 }
 export default StreamCamera;

@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
-import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImxfxMode, MeteringMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, MeteringMode, Rotation } from '..';
 export interface StillOptions {
     width?: number;
     height?: number;
@@ -19,14 +19,14 @@ export interface StillOptions {
     awbGains?: [number, number];
     analogGain?: number;
     digitalGain?: number;
-    imageEffect?: ImxfxMode;
-    colourEffect?: [number, number];
+    imageEffectMode?: ImageEffectMode;
+    colorEffect?: [number, number];
     dynamicRange?: DynamicRange;
-    videoStabilisation?: boolean;
+    videoStabilization?: boolean;
     raw?: boolean;
     quality?: number;
     statistics?: boolean;
-    thumbnail?: [number, number, number] | 'none';
+    thumbnail?: [number, number, number] | false;
     meteringMode?: MeteringMode;
     flickerMode?: FlickerMode;
     burst?: boolean;
@@ -34,6 +34,12 @@ export interface StillOptions {
     showPreview?: [number, number, number, number] | 'fullscreen' | false;
     opacityPreview?: number;
     displayNumber?: DisplayNumber;
+    exif?: {
+        [key: string]: string | number;
+    } | false;
+    gpsExif?: boolean;
+    annotate?: (number | string)[];
+    annotateExtra?: [number, string, string];
 }
 declare interface StillCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;
@@ -44,15 +50,13 @@ declare interface StillCamera {
 declare class StillCamera extends EventEmitter {
     private options;
     static readonly jpegSignature: Buffer;
-    livePreview: boolean;
+    private showPreview;
     private childProcess?;
-    private streams;
     private args;
     constructor(options?: StillOptions);
-    private init;
+    setOptions(options: StillOptions): void;
     private startPreview;
     takeImage(): Promise<Buffer>;
-    updateOptions(options: StillOptions): void;
     stopPreview(): void;
 }
 export default StillCamera;
