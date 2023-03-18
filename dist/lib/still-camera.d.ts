@@ -40,6 +40,8 @@ export interface StillOptions {
     gpsExif?: boolean;
     annotate?: (number | string)[];
     annotateExtra?: [number, string, string];
+    output?: string;
+    frameStart?: number;
 }
 declare interface StillCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;
@@ -51,13 +53,14 @@ declare class StillCamera extends EventEmitter {
     private options;
     private readonly defaultOptions;
     static readonly jpegSignature: Buffer;
+    static readonly jpegSignatureEnd: Buffer;
     private showPreview;
     private childProcess?;
     private args;
     constructor(options?: StillOptions);
     setOptions(options: StillOptions): void;
     private startPreview;
-    takeImage(): Promise<Buffer>;
+    takeImage(): Promise<Buffer | null>;
     stopPreview(): void;
 }
 export default StillCamera;

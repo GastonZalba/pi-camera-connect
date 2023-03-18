@@ -50,6 +50,7 @@ export interface StreamOptions {
     displayNumber?: DisplayNumber;
     annotate?: (number | string)[];
     annotateExtra?: [number, string, string];
+    output?: string;
 }
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;

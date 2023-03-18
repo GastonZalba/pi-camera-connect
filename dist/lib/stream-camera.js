@@ -121,10 +121,9 @@ class StreamCamera extends events_1.EventEmitter {
             '--timeout',
             (0).toString(),
             /**
-             * Output to stdout
+             * Output to file or stdout
              */
-            '--output',
-            '-',
+            ...['--output', this.options.output ? this.options.output.toString() : '-'],
         ];
         if (this.options.showPreview) {
             this.startPreview();

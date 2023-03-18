@@ -33,8 +33,7 @@ class StillCamera extends events_1.EventEmitter {
             /**
              * Capture delay (ms)
              */
-            '--timeout',
-            this.options.delay.toString(),
+            ...(!this.options.showPreview ? ['--timeout', this.options.delay.toString()] : []),
             /**
              * RAW (Save Bayer Data)
              * This option inserts the raw Bayer data from the camera in to the
@@ -82,10 +81,14 @@ class StillCamera extends events_1.EventEmitter {
              */
             ...(this.options.gpsExif ? ['--gpsexif'] : []),
             /**
-             * Output to stdout
+             * Specifies the first frame number
+             * To be used combined with %08d in the filename output
              */
-            '--output',
-            '-',
+            ...(this.options.frameStart ? ['--framestart', this.options.frameStart.toString()] : []),
+            /**
+             * Output to file or stdout
+             */
+            ...['--output', this.options.output ? this.options.output.toString() : '-'],
         ];
         if (this.options.showPreview) {
             this.startPreview();
@@ -96,11 +99,17 @@ class StillCamera extends events_1.EventEmitter {
             this.childProcess = child_process_1.spawn('raspistill', this.args);
             // Listen for error event to reject promise
             this.childProcess.once('error', err => {
-                throw err;
+                this.emit('error', err);
             });
             let stdoutBuffer = Buffer.alloc(0);
+            // Embebed thumbail support
+            let countStart = 0;
+            let countEnd = 0;
             // Listen for image data events and parse MJPEG frames if codec is MJPEG
             this.childProcess.stdout.on('data', (data) => {
+                const isJpegStart = data.indexOf(StillCamera.jpegSignature, 0);
+                if (isJpegStart)
+                    countStart += 1;
                 stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
                 // Extract all image frames from the current buffer
                 while (true) {
@@ -110,11 +119,16 @@ class StillCamera extends events_1.EventEmitter {
                     // Make sure the signature starts at the beginning of the buffer
                     if (signatureIndex > 0)
                         stdoutBuffer = stdoutBuffer.slice(signatureIndex);
-                    const nextSignatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature, StillCamera.jpegSignature.length);
-                    if (nextSignatureIndex === -1)
+                    const endSignatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignatureEnd, 0);
+                    if (endSignatureIndex !== -1)
+                        countEnd += 1;
+                    if (endSignatureIndex === -1 || countStart === countEnd)
                         break;
-                    this.emit('frame', stdoutBuffer.slice(0, nextSignatureIndex));
-                    stdoutBuffer = stdoutBuffer.slice(nextSignatureIndex);
+                    this.emit('frame', stdoutBuffer);
+                    countEnd = 0;
+                    countStart = 0;
+                    stdoutBuffer = Buffer.alloc(0);
+                    break;
                 }
             });
             // Listen for error events
@@ -122,10 +136,14 @@ class StillCamera extends events_1.EventEmitter {
             this.childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
             this.childProcess.stderr.on('error', err => this.emit('error', err));
             // Listen for close events
-            this.childProcess.stdout.on('close', () => this.emit('close'));
+            this.childProcess.stdout.once('close', () => {
+                this.stopPreview();
+                this.emit('close');
+            });
             this.showPreview = true;
         }
         catch (err) {
+            this.stopPreview();
             this.emit('error', err.code === 'ENOENT'
                 ? new Error("Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?")
                 : err);
@@ -134,12 +152,19 @@ class StillCamera extends events_1.EventEmitter {
     takeImage() {
         try {
             if (this.showPreview) {
-                return new Promise(resolve => {
-                    this.once('frame', data => resolve(data));
+                return new Promise((resolve, reject) => {
+                    if (!this.options.output) {
+                        this.once('frame', data => resolve(data));
+                    }
                     if (this.childProcess) {
                         // send character to take the picture
-                        this.childProcess.stdin.write('-');
-                        this.childProcess.stdin.end();
+                        this.childProcess.stdin.write('-', err => {
+                            if (err)
+                                reject(err);
+                            if (this.options.output) {
+                                resolve(null);
+                            }
+                        });
                     }
                 });
             }
@@ -156,12 +181,14 @@ class StillCamera extends events_1.EventEmitter {
     stopPreview() {
         if (!this.showPreview)
             return;
+        this.showPreview = false;
         if (this.childProcess) {
+            this.childProcess.removeAllListeners();
             this.childProcess.kill();
         }
-        this.showPreview = false;
     }
 }
 StillCamera.jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
+StillCamera.jpegSignatureEnd = Buffer.from([0xff, 0xd9]);
 exports.default = StillCamera;
 //# sourceMappingURL=still-camera.js.map
