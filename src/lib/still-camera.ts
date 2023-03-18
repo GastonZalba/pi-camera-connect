@@ -11,7 +11,7 @@ import {
   MeteringMode,
   Rotation,
 } from '..';
-import { spawnPromise } from '../util';
+import { indexOfAll, spawnPromise } from '../util';
 import { getSharedArgs } from './shared-args';
 
 export interface StillOptions {
@@ -53,6 +53,7 @@ export interface StillOptions {
   annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
   output?: string;
   frameStart?: number;
+  latest?: string;
 }
 
 declare interface StillCamera {
@@ -66,7 +67,7 @@ class StillCamera extends EventEmitter {
   private options: StillOptions = {};
   private readonly defaultOptions: StillOptions;
 
-  static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
+  static readonly jpegSignature = Buffer.from([0xff, 0xd8]);
   static readonly jpegSignatureEnd = Buffer.from([0xff, 0xd9]);
 
   private showPreview: boolean = false;
@@ -146,9 +147,9 @@ class StillCamera extends EventEmitter {
        */
       ...(this.options.exif
         ? Object.keys(this.options.exif).flatMap(key => [
-            '--exif',
-            `${key}=${(this.options.exif as any)[key as keyof StillOptions['exif']]}`,
-          ])
+          '--exif',
+          `${key}=${(this.options.exif as any)[key as keyof StillOptions['exif']]}`,
+        ])
         : []),
 
       // `false` will remove all the default EXIF information
@@ -168,9 +169,15 @@ class StillCamera extends EventEmitter {
       ...(this.options.frameStart ? ['--framestart', this.options.frameStart.toString()] : []),
 
       /**
+       * Makes a file system link under this name to the latest frame.
+       */
+      ...(this.options.latest ? ['--latest', this.options.latest] : []),
+
+      /**
        * Output to file or stdout
        */
       ...['--output', this.options.output ? this.options.output.toString() : '-'],
+
     ];
 
     if (this.options.showPreview) {
@@ -188,32 +195,29 @@ class StillCamera extends EventEmitter {
 
       let stdoutBuffer = Buffer.alloc(0);
 
-      // Embebed thumbail support
-      let countStart = 0;
+      // Embebed thumnbail support
       let countEnd = 0;
+      let countStart = 0;
 
       // Listen for image data events and parse MJPEG frames if codec is MJPEG
       this.childProcess.stdout.on('data', (data: Buffer) => {
-        const isJpegStart = data.indexOf(StillCamera.jpegSignature, 0);
-
-        if (isJpegStart) countStart += 1;
-
         stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
+
+        // Count the JPEG starts and ends of JPEG signatures
+        // If the image has embebed preview, the start index match two times
+        countStart += indexOfAll(data, StillCamera.jpegSignature);
+        countEnd += indexOfAll(data, StillCamera.jpegSignatureEnd);
 
         // Extract all image frames from the current buffer
         while (true) {
-          const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature, 0);
+          const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature);
 
           if (signatureIndex === -1) break;
 
           // Make sure the signature starts at the beginning of the buffer
           if (signatureIndex > 0) stdoutBuffer = stdoutBuffer.slice(signatureIndex);
 
-          const endSignatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignatureEnd, 0);
-
-          if (endSignatureIndex !== -1) countEnd += 1;
-
-          if (endSignatureIndex === -1 || countStart === countEnd) break;
+          if (countEnd !== countStart) break;
 
           this.emit('frame', stdoutBuffer);
 
@@ -242,8 +246,8 @@ class StillCamera extends EventEmitter {
         'error',
         (err as NodeJS.ErrnoException).code === 'ENOENT'
           ? new Error(
-              "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
-            )
+            "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+          )
           : err,
       );
     }

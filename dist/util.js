@@ -1,6 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const child_process_1 = require("child_process");
+/**
+ * Count all occurrences of a indexOf
+ * @param buffer
+ * @param searchItem
+ * @returns
+ */
+exports.indexOfAll = (buffer, searchItem) => {
+    let i = buffer.indexOf(searchItem);
+    let count = 0;
+    while (i !== -1) {
+        count += 1;
+        i += 1;
+        i = buffer.indexOf(searchItem, i);
+    }
+    return count;
+};
 exports.spawnPromise = (command, args, options) => new Promise((resolve, reject) => {
     const childProcess = child_process_1.spawn(command, args !== null && args !== void 0 ? args : [], options !== null && options !== void 0 ? options : {});
     let stdoutData = Buffer.alloc(0);

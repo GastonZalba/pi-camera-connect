@@ -31,7 +31,7 @@ test('takeImage() returns JPEG', async () => {
     },
   });
 
-  const jpegImage = await stillCamera.takeImage() as Buffer;
+  const jpegImage = (await stillCamera.takeImage()) as Buffer;
   const t1 = performance.now();
 
   const time = ((t1 - t0) / 1000).toFixed(2);
@@ -51,7 +51,8 @@ test('takeImage with live preview, returns JPEG', async () => {
     showPreview: [100, 100, 100, 100],
   });
 
-  const jpegImage = await stillCamera.takeImage() as Buffer;
+  const jpegImage = (await stillCamera.takeImage()) as Buffer;
+  stillCamera.stopPreview();
   const t1 = performance.now();
 
   const time = ((t1 - t0) / 1000).toFixed(2);

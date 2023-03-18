@@ -1,5 +1,22 @@
 import { spawn, SpawnOptions } from 'child_process';
 
+/**
+ * Count all occurrences of a indexOf
+ * @param buffer
+ * @param searchItem
+ * @returns
+ */
+export const indexOfAll = (buffer: Buffer, searchItem: Buffer) => {
+  let i = buffer.indexOf(searchItem);
+  let count = 0;
+  while (i !== -1) {
+    count += 1;
+    i += 1;
+    i = buffer.indexOf(searchItem, i);
+  }
+  return count;
+};
+
 export const spawnPromise = (command: string, args?: Array<string>, options?: SpawnOptions) =>
   new Promise<Buffer>((resolve, reject) => {
     const childProcess = spawn(command, args ?? [], options ?? {});

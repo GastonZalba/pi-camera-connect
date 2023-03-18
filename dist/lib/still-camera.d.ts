@@ -42,6 +42,7 @@ export interface StillOptions {
     annotateExtra?: [number, string, string];
     output?: string;
     frameStart?: number;
+    latest?: string;
 }
 declare interface StillCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;

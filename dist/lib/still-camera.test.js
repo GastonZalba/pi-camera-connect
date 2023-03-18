@@ -23,7 +23,7 @@ test('takeImage() returns JPEG', async () => {
             'IFD0.ImageDescription': 'This is a custom description',
         },
     });
-    const jpegImage = await stillCamera.takeImage();
+    const jpegImage = (await stillCamera.takeImage());
     const t1 = perf_hooks_1.performance.now();
     const time = ((t1 - t0) / 1000).toFixed(2);
     await fs.promises.writeFile(`${TEST_IMAGES_DIR}/stillCapture_(${time}-secs).jpeg`, jpegImage, 'binary');
@@ -34,7 +34,8 @@ test('takeImage with live preview, returns JPEG', async () => {
     const stillCamera = new still_camera_1.default({
         showPreview: [100, 100, 100, 100],
     });
-    const jpegImage = await stillCamera.takeImage();
+    const jpegImage = (await stillCamera.takeImage());
+    stillCamera.stopPreview();
     const t1 = perf_hooks_1.performance.now();
     const time = ((t1 - t0) / 1000).toFixed(2);
     await fs.promises.writeFile(`${TEST_IMAGES_DIR}/stillCapture_live_(${time}-secs).jpeg`, jpegImage, 'binary');

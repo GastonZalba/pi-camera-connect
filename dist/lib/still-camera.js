@@ -86,6 +86,10 @@ class StillCamera extends events_1.EventEmitter {
              */
             ...(this.options.frameStart ? ['--framestart', this.options.frameStart.toString()] : []),
             /**
+             * Makes a file system link under this name to the latest frame.
+             */
+            ...(this.options.latest ? ['--latest', this.options.latest] : []),
+            /**
              * Output to file or stdout
              */
             ...['--output', this.options.output ? this.options.output.toString() : '-'],
@@ -102,27 +106,25 @@ class StillCamera extends events_1.EventEmitter {
                 this.emit('error', err);
             });
             let stdoutBuffer = Buffer.alloc(0);
-            // Embebed thumbail support
-            let countStart = 0;
+            // Embebed thumnbail support
             let countEnd = 0;
+            let countStart = 0;
             // Listen for image data events and parse MJPEG frames if codec is MJPEG
             this.childProcess.stdout.on('data', (data) => {
-                const isJpegStart = data.indexOf(StillCamera.jpegSignature, 0);
-                if (isJpegStart)
-                    countStart += 1;
                 stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
+                // Count the JPEG starts and ends of JPEG signatures
+                // If the image has embebed preview, the start index match two times
+                countStart += util_1.indexOfAll(data, StillCamera.jpegSignature);
+                countEnd += util_1.indexOfAll(data, StillCamera.jpegSignatureEnd);
                 // Extract all image frames from the current buffer
                 while (true) {
-                    const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature, 0);
+                    const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature);
                     if (signatureIndex === -1)
                         break;
                     // Make sure the signature starts at the beginning of the buffer
                     if (signatureIndex > 0)
                         stdoutBuffer = stdoutBuffer.slice(signatureIndex);
-                    const endSignatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignatureEnd, 0);
-                    if (endSignatureIndex !== -1)
-                        countEnd += 1;
-                    if (endSignatureIndex === -1 || countStart === countEnd)
+                    if (countEnd !== countStart)
                         break;
                     this.emit('frame', stdoutBuffer);
                     countEnd = 0;
@@ -188,7 +190,7 @@ class StillCamera extends events_1.EventEmitter {
         }
     }
 }
-StillCamera.jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
+StillCamera.jpegSignature = Buffer.from([0xff, 0xd8]);
 StillCamera.jpegSignatureEnd = Buffer.from([0xff, 0xd9]);
 exports.default = StillCamera;
 //# sourceMappingURL=still-camera.js.map
