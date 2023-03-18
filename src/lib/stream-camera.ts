@@ -64,6 +64,7 @@ export interface StreamOptions {
   displayNumber?: DisplayNumber;
   annotate?: (number | string)[];
   annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
+  output?: string;
 }
 
 declare interface StreamCamera {
@@ -192,10 +193,9 @@ class StreamCamera extends EventEmitter {
       (0).toString(),
 
       /**
-       * Output to stdout
+       * Output to file or stdout
        */
-      '--output',
-      '-',
+      ...['--output', this.options.output ? this.options.output.toString() : '-'],
     ];
 
     if (this.options.showPreview) {

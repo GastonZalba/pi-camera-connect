@@ -51,6 +51,8 @@ export interface StillOptions {
   gpsExif?: boolean;
   annotate?: (number | string)[];
   annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
+  output?: string;
+  frameStart?: number;
 }
 
 declare interface StillCamera {
@@ -65,6 +67,7 @@ class StillCamera extends EventEmitter {
   private readonly defaultOptions: StillOptions;
 
   static readonly jpegSignature = Buffer.from([0xff, 0xd8, 0xff, 0xe1]);
+  static readonly jpegSignatureEnd = Buffer.from([0xff, 0xd9]);
 
   private showPreview: boolean = false;
   private childProcess?: ChildProcessWithoutNullStreams;
@@ -103,8 +106,7 @@ class StillCamera extends EventEmitter {
       /**
        * Capture delay (ms)
        */
-      '--timeout',
-      this.options.delay!.toString(),
+      ...(!this.options.showPreview ? ['--timeout', this.options.delay!.toString()] : []),
 
       /**
        * RAW (Save Bayer Data)
@@ -148,6 +150,7 @@ class StillCamera extends EventEmitter {
             `${key}=${(this.options.exif as any)[key as keyof StillOptions['exif']]}`,
           ])
         : []),
+
       // `false` will remove all the default EXIF information
       ...(this.options.exif === false ? ['--exif', 'none'] : []),
 
@@ -159,10 +162,15 @@ class StillCamera extends EventEmitter {
       ...(this.options.gpsExif ? ['--gpsexif'] : []),
 
       /**
-       * Output to stdout
+       * Specifies the first frame number
+       * To be used combined with %08d in the filename output
        */
-      '--output',
-      '-',
+      ...(this.options.frameStart ? ['--framestart', this.options.frameStart.toString()] : []),
+
+      /**
+       * Output to file or stdout
+       */
+      ...['--output', this.options.output ? this.options.output.toString() : '-'],
     ];
 
     if (this.options.showPreview) {
@@ -175,13 +183,21 @@ class StillCamera extends EventEmitter {
       this.childProcess = spawn('raspistill', this.args);
       // Listen for error event to reject promise
       this.childProcess.once('error', err => {
-        throw err;
+        this.emit('error', err);
       });
 
       let stdoutBuffer = Buffer.alloc(0);
 
+      // Embebed thumbail support
+      let countStart = 0;
+      let countEnd = 0;
+
       // Listen for image data events and parse MJPEG frames if codec is MJPEG
       this.childProcess.stdout.on('data', (data: Buffer) => {
+        const isJpegStart = data.indexOf(StillCamera.jpegSignature, 0);
+
+        if (isJpegStart) countStart += 1;
+
         stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
 
         // Extract all image frames from the current buffer
@@ -193,16 +209,18 @@ class StillCamera extends EventEmitter {
           // Make sure the signature starts at the beginning of the buffer
           if (signatureIndex > 0) stdoutBuffer = stdoutBuffer.slice(signatureIndex);
 
-          const nextSignatureIndex = stdoutBuffer.indexOf(
-            StillCamera.jpegSignature,
-            StillCamera.jpegSignature.length,
-          );
+          const endSignatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignatureEnd, 0);
 
-          if (nextSignatureIndex === -1) break;
+          if (endSignatureIndex !== -1) countEnd += 1;
 
-          this.emit('frame', stdoutBuffer.slice(0, nextSignatureIndex));
+          if (endSignatureIndex === -1 || countStart === countEnd) break;
 
-          stdoutBuffer = stdoutBuffer.slice(nextSignatureIndex);
+          this.emit('frame', stdoutBuffer);
+
+          countEnd = 0;
+          countStart = 0;
+          stdoutBuffer = Buffer.alloc(0);
+          break;
         }
       });
 
@@ -212,10 +230,14 @@ class StillCamera extends EventEmitter {
       this.childProcess.stderr.on('error', err => this.emit('error', err));
 
       // Listen for close events
-      this.childProcess.stdout.on('close', () => this.emit('close'));
+      this.childProcess.stdout.once('close', () => {
+        this.stopPreview();
+        this.emit('close');
+      });
 
       this.showPreview = true;
     } catch (err) {
+      this.stopPreview();
       this.emit(
         'error',
         (err as NodeJS.ErrnoException).code === 'ENOENT'
@@ -227,15 +249,21 @@ class StillCamera extends EventEmitter {
     }
   }
 
-  takeImage(): Promise<Buffer> {
+  takeImage(): Promise<Buffer | null> {
     try {
       if (this.showPreview) {
-        return new Promise<Buffer>(resolve => {
-          this.once('frame', data => resolve(data));
+        return new Promise<Buffer | null>((resolve, reject) => {
+          if (!this.options.output) {
+            this.once('frame', data => resolve(data));
+          }
           if (this.childProcess) {
             // send character to take the picture
-            this.childProcess.stdin.write('-');
-            this.childProcess.stdin.end();
+            this.childProcess.stdin.write('-', err => {
+              if (err) reject(err);
+              if (this.options.output) {
+                resolve(null);
+              }
+            });
           }
         });
       }
@@ -254,11 +282,12 @@ class StillCamera extends EventEmitter {
   stopPreview(): void {
     if (!this.showPreview) return;
 
+    this.showPreview = false;
+
     if (this.childProcess) {
+      this.childProcess.removeAllListeners();
       this.childProcess.kill();
     }
-
-    this.showPreview = false;
   }
 }
 
