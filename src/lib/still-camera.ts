@@ -147,9 +147,9 @@ class StillCamera extends EventEmitter {
        */
       ...(this.options.exif
         ? Object.keys(this.options.exif).flatMap(key => [
-          '--exif',
-          `${key}=${(this.options.exif as any)[key as keyof StillOptions['exif']]}`,
-        ])
+            '--exif',
+            `${key}=${(this.options.exif as any)[key as keyof StillOptions['exif']]}`,
+          ])
         : []),
 
       // `false` will remove all the default EXIF information
@@ -177,7 +177,6 @@ class StillCamera extends EventEmitter {
        * Output to file or stdout
        */
       ...['--output', this.options.output ? this.options.output.toString() : '-'],
-
     ];
 
     if (this.options.showPreview) {
@@ -246,8 +245,8 @@ class StillCamera extends EventEmitter {
         'error',
         (err as NodeJS.ErrnoException).code === 'ENOENT'
           ? new Error(
-            "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
-          )
+              "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+            )
           : err,
       );
     }
@@ -273,13 +272,15 @@ class StillCamera extends EventEmitter {
       }
       return spawnPromise('raspistill', this.args);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new Error(
-          "Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
-        );
-      }
-      this.emit('error', err);
-      throw err;
+      const error =
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
+          ? new Error(
+              "Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+            )
+          : err;
+
+      this.emit('error', error);
+      throw error;
     }
   }
 
@@ -289,7 +290,7 @@ class StillCamera extends EventEmitter {
     this.showPreview = false;
 
     if (this.childProcess) {
-      this.childProcess.removeAllListeners();
+      this.childProcess.stdout.removeAllListeners();
       this.childProcess.kill();
     }
   }

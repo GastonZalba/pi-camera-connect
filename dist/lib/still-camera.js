@@ -173,11 +173,11 @@ class StillCamera extends events_1.EventEmitter {
             return util_1.spawnPromise('raspistill', this.args);
         }
         catch (err) {
-            if (err.code === 'ENOENT') {
-                throw new Error("Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?");
-            }
-            this.emit('error', err);
-            throw err;
+            const error = err.code === 'ENOENT'
+                ? new Error("Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?")
+                : err;
+            this.emit('error', error);
+            throw error;
         }
     }
     stopPreview() {
@@ -185,7 +185,7 @@ class StillCamera extends events_1.EventEmitter {
             return;
         this.showPreview = false;
         if (this.childProcess) {
-            this.childProcess.removeAllListeners();
+            this.childProcess.stdout.removeAllListeners();
             this.childProcess.kill();
         }
     }
