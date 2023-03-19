@@ -183,73 +183,83 @@ class StillCamera extends EventEmitter {
       this.startPreview();
     }
   }
+  private initChildProcess(): ChildProcessWithoutNullStreams {
+    // Spawn child process
+    const childProcess = spawn('raspistill', this.args);
 
-  private startPreview(): void {
-    try {
-      this.childProcess = spawn('raspistill', this.args);
-      // Listen for error event to reject promise
-      this.childProcess.once('error', err => {
-        this.emit('error', err);
-      });
-
-      let stdoutBuffer = Buffer.alloc(0);
-
-      // Embebed thumnbail support
-      let countEnd = 0;
-      let countStart = 0;
-
-      // Listen for image data events and parse MJPEG frames if codec is MJPEG
-      this.childProcess.stdout.on('data', (data: Buffer) => {
-        stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
-
-        // Count the JPEG starts and ends of JPEG signatures
-        // If the image has embebed preview, the start index match two times
-        countStart += indexOfAll(data, StillCamera.jpegSignature);
-        countEnd += indexOfAll(data, StillCamera.jpegSignatureEnd);
-
-        // Extract all image frames from the current buffer
-        while (true) {
-          const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature);
-
-          if (signatureIndex === -1) break;
-
-          // Make sure the signature starts at the beginning of the buffer
-          if (signatureIndex > 0) stdoutBuffer = stdoutBuffer.slice(signatureIndex);
-
-          if (countEnd !== countStart) break;
-
-          this.emit('frame', stdoutBuffer);
-
-          countEnd = 0;
-          countStart = 0;
-          stdoutBuffer = Buffer.alloc(0);
-          break;
-        }
-      });
-
-      // Listen for error events
-      this.childProcess.stdout.on('error', err => this.emit('error', err));
-      this.childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
-      this.childProcess.stderr.on('error', err => this.emit('error', err));
-
-      // Listen for close events
-      this.childProcess.stdout.once('close', () => {
-        this.stopPreview();
-        this.emit('close');
-      });
-
-      this.showPreview = true;
-    } catch (err) {
-      this.stopPreview();
-      this.emit(
-        'error',
-        (err as NodeJS.ErrnoException).code === 'ENOENT'
-          ? new Error(
-              "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
-            )
-          : err,
+    // Listen for error event to reject promise
+    childProcess.once('error', () => {
+      throw new Error(
+        "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
       );
-    }
+    });
+
+    // Listen for error events
+    childProcess.stdout.on('error', err => this.emit('error', err));
+    childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
+    childProcess.stderr.on('error', err => this.emit('error', err));
+
+    // Listen for close events
+    childProcess.stdout.once('close', () => {
+      this.stopPreview();
+      this.emit('close');
+    });
+
+    return childProcess;
+  }
+
+  private startPreview(): Promise<void> {
+    return new Promise(resolve => {
+      try {
+        if (!this.childProcess) {
+          this.childProcess = this.initChildProcess();
+        }
+
+        // Wait for first data event to resolve promise
+        this.childProcess.stdout.once('data', () => resolve());
+
+        let stdoutBuffer = Buffer.alloc(0);
+
+        // Embebed thumnbail support
+        let countEnd = 0;
+        let countStart = 0;
+
+        // Listen for image data events and parse MJPEG frames if codec is MJPEG
+        this.childProcess.stdout.on('data', (data: Buffer) => {
+          stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
+
+          // Count the JPEG starts and ends of JPEG signatures
+          // If the image has embebed preview, the start index match two times
+          countStart += indexOfAll(data, StillCamera.jpegSignature);
+          countEnd += indexOfAll(data, StillCamera.jpegSignatureEnd);
+
+          // Extract all image frames from the current buffer
+          while (true) {
+            const signatureIndex = stdoutBuffer.indexOf(StillCamera.jpegSignature);
+
+            if (signatureIndex === -1) break;
+
+            // Make sure the signature starts at the beginning of the buffer
+            if (signatureIndex > 0) stdoutBuffer = stdoutBuffer.slice(signatureIndex);
+
+            if (countEnd !== countStart) break;
+
+            this.emit('frame', stdoutBuffer);
+
+            countEnd = 0;
+            countStart = 0;
+            stdoutBuffer = Buffer.alloc(0);
+            break;
+          }
+        });
+
+        this.showPreview = true;
+      } catch (err) {
+        this.stopPreview();
+        this.emit('error', err);
+        resolve();
+      }
+    });
   }
 
   takeImage(): Promise<Buffer | null> {

@@ -60,6 +60,7 @@ declare class StillCamera extends EventEmitter {
     private args;
     constructor(options?: StillOptions);
     setOptions(options: StillOptions): void;
+    private initChildProcess;
     private startPreview;
     takeImage(): Promise<Buffer | null>;
     stopPreview(): void;
