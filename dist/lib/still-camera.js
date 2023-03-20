@@ -101,9 +101,8 @@ class StillCamera extends events_1.EventEmitter {
     initChildProcess() {
         // Spawn child process
         const childProcess = child_process_1.spawn('raspistill', this.args);
-        // Listen for error event to reject promise
-        childProcess.once('error', () => {
-            throw new Error("Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?");
+        childProcess.on('error', () => {
+            this.emit('error', new Error("Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?"));
         });
         // Listen for error events
         childProcess.stdout.on('error', err => this.emit('error', err));
@@ -197,6 +196,7 @@ class StillCamera extends events_1.EventEmitter {
         if (this.childProcess) {
             this.childProcess.stdout.removeAllListeners();
             this.childProcess.kill();
+            this.childProcess = undefined;
         }
     }
 }
