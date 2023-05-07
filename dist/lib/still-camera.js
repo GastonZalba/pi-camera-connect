@@ -7,6 +7,7 @@ const util_1 = require("../util");
 const shared_args_1 = require("./shared-args");
 class StillCamera extends events_1.EventEmitter {
     constructor(options = {}) {
+        var _a;
         super();
         this.options = {};
         this.showPreview = false;
@@ -17,6 +18,7 @@ class StillCamera extends events_1.EventEmitter {
             flip: __1.Flip.None,
             delay: 1,
         };
+        this.libraryMode = (_a = options.libraryMode) !== null && _a !== void 0 ? _a : __1.StillLibrary.Raspistill;
         this.setOptions(options);
     }
     setOptions(options) {
@@ -100,9 +102,9 @@ class StillCamera extends events_1.EventEmitter {
     }
     initChildProcess() {
         // Spawn child process
-        const childProcess = child_process_1.spawn('raspistill', this.args);
+        const childProcess = child_process_1.spawn(this.libraryMode, this.args);
         childProcess.on('error', () => {
-            this.emit('error', new Error("Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?"));
+            this.emit('error', new Error(`Could not initialize StillCamera. Are you running on a Raspberry Pi with '${this.libraryMode}' installed?`));
         });
         // Listen for error events
         childProcess.stdout.on('error', err => this.emit('error', err));
@@ -179,11 +181,11 @@ class StillCamera extends events_1.EventEmitter {
                     }
                 });
             }
-            return util_1.spawnPromise('raspistill', this.args);
+            return util_1.spawnPromise(this.libraryMode, this.args);
         }
         catch (err) {
             const error = err.code === 'ENOENT'
-                ? new Error("Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?")
+                ? new Error(`Could not take image with StillCamera. Are you running on a Raspberry Pi with ${this.libraryMode} installed?`)
                 : err;
             this.emit('error', error);
             throw error;

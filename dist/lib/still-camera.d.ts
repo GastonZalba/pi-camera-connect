@@ -1,7 +1,8 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
-import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, MeteringMode, Rotation } from '..';
+import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, StillLibrary, MeteringMode, Rotation } from '..';
 export interface StillOptions {
+    libraryMode?: StillLibrary;
     width?: number;
     height?: number;
     rotation?: Rotation;
@@ -12,17 +13,39 @@ export interface StillOptions {
     contrast?: number;
     brightness?: number;
     saturation?: number;
-    iso?: number;
     exposureCompensation?: number;
     exposureMode?: ExposureMode;
     awbMode?: AwbMode;
     awbGains?: [number, number];
+    /**
+     * Only for stillcamera
+     */
+    iso?: number;
+    /**
+     * Only for stillcamera
+     */
     analogGain?: number;
+    /**
+     * Only for stillcamera
+     */
     digitalGain?: number;
+    /**
+     * Only for libcamera
+     */
+    gain?: number;
+    /**
+     * Only for stillcamera
+     */
     imageEffectMode?: ImageEffectMode;
+    /**
+     * Only for stillcamera
+     */
     colorEffect?: [number, number];
-    dynamicRange?: DynamicRange;
+    /**
+     * Only for stillcamera
+     */
     videoStabilization?: boolean;
+    dynamicRange?: DynamicRange;
     raw?: boolean;
     quality?: number;
     statistics?: boolean;
@@ -58,6 +81,7 @@ declare class StillCamera extends EventEmitter {
     private showPreview;
     private childProcess?;
     private args;
+    private readonly libraryMode;
     constructor(options?: StillOptions);
     setOptions(options: StillOptions): void;
     private initChildProcess;
