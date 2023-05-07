@@ -8,6 +8,7 @@ import {
   FlickerMode,
   Flip,
   ImageEffectMode,
+  StillLibrary,
   MeteringMode,
   Rotation,
 } from '..';
@@ -15,6 +16,7 @@ import { indexOfAll, spawnPromise } from '../util';
 import { getSharedArgs } from './shared-args';
 
 export interface StillOptions {
+  libraryMode?: StillLibrary;
   width?: number;
   height?: number;
   rotation?: Rotation;
@@ -25,17 +27,47 @@ export interface StillOptions {
   contrast?: number;
   brightness?: number;
   saturation?: number;
-  iso?: number;
   exposureCompensation?: number;
   exposureMode?: ExposureMode;
   awbMode?: AwbMode;
   awbGains?: [number, number];
+
+  /**
+   * Only for stillcamera
+   */
+  iso?: number;
+
+  /**
+   * Only for stillcamera
+   */
   analogGain?: number;
+
+  /**
+   * Only for stillcamera
+   */
   digitalGain?: number;
+
+  /**
+   * Only for libcamera
+   */
+  gain?: number;
+
+  /**
+   * Only for stillcamera
+   */
   imageEffectMode?: ImageEffectMode;
+
+  /**
+   * Only for stillcamera
+   */
   colorEffect?: [number, number]; // U,V
-  dynamicRange?: DynamicRange;
+
+  /**
+   * Only for stillcamera
+   */
   videoStabilization?: boolean;
+
+  dynamicRange?: DynamicRange;
   raw?: boolean;
   quality?: number;
   statistics?: boolean;
@@ -73,6 +105,7 @@ class StillCamera extends EventEmitter {
   private showPreview: boolean = false;
   private childProcess?: ChildProcessWithoutNullStreams;
   private args: Array<string> = [];
+  private readonly libraryMode: StillLibrary;
 
   constructor(options: StillOptions = {}) {
     super();
@@ -83,6 +116,8 @@ class StillCamera extends EventEmitter {
       flip: Flip.None,
       delay: 1,
     };
+
+    this.libraryMode = options.libraryMode ?? StillLibrary.Raspistill;
 
     this.setOptions(options);
   }
@@ -185,13 +220,13 @@ class StillCamera extends EventEmitter {
   }
   private initChildProcess(): ChildProcessWithoutNullStreams {
     // Spawn child process
-    const childProcess = spawn('raspistill', this.args);
+    const childProcess = spawn(this.libraryMode, this.args);
 
     childProcess.on('error', () => {
       this.emit(
         'error',
         new Error(
-          "Could not initialize StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+          `Could not initialize StillCamera. Are you running on a Raspberry Pi with '${this.libraryMode}' installed?`,
         ),
       );
     });
@@ -282,12 +317,12 @@ class StillCamera extends EventEmitter {
           }
         });
       }
-      return spawnPromise('raspistill', this.args);
+      return spawnPromise(this.libraryMode, this.args);
     } catch (err) {
       const error =
         (err as NodeJS.ErrnoException).code === 'ENOENT'
           ? new Error(
-              "Could not take image with StillCamera. Are you running on a Raspberry Pi with 'raspistill' installed?",
+              `Could not take image with StillCamera. Are you running on a Raspberry Pi with ${this.libraryMode} installed?`,
             )
           : err;
 

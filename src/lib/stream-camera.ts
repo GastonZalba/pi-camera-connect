@@ -51,6 +51,7 @@ export interface StreamOptions {
   awbGains?: [number, number];
   analogGain?: number;
   digitalGain?: number;
+  gain?: number;
   imageEffectMode?: ImageEffectMode;
   colorEffect?: [number, number]; // U,V
   dynamicRange?: DynamicRange;

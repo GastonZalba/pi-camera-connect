@@ -102,9 +102,16 @@ export function getSharedArgs(options: StillOptions | StreamOptions): string[] {
      * Digital Gain
      * Sets the digital gain value applied by the ISP
      * (floating point value from 1.0 to 64.0,
-     * but values over about 4.0 willproduce overexposed images)
+     * but values over about 4.0 will produce overexposed images)
      */
     ...(options.digitalGain ? ['--digitalgain', options.digitalGain.toString()] : []),
+
+    /**
+     * Gain
+     * Sets the gain value applied by the ISP
+     * NOTE: Only for libcamera
+     */
+    ...(options.gain ? ['--gain', options.gain.toString()] : []),
 
     /**
      * Image Effect
