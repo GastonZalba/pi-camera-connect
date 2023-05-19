@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as stream from 'stream';
 import {
   AwbMode,
+  DenoiseMode,
   DisplayNumber,
   DynamicRange,
   ExposureMode,
@@ -44,28 +45,38 @@ export interface StreamOptions {
   contrast?: number;
   brightness?: number;
   saturation?: number;
-  iso?: number;
   exposureCompensation?: number;
   exposureMode?: ExposureMode;
   awbMode?: AwbMode;
   awbGains?: [number, number];
-  analogGain?: number;
-  digitalGain?: number;
-  gain?: number;
-  imageEffectMode?: ImageEffectMode;
-  colorEffect?: [number, number]; // U,V
-  dynamicRange?: DynamicRange;
-  videoStabilization?: boolean;
   statistics?: boolean;
   meteringMode?: MeteringMode;
-  flickerMode?: FlickerMode;
   roi?: [number, number, number, number]; // X, Y, W, H
   showPreview?: [number, number, number, number] | 'fullscreen' | false; // X,Y,W,H
-  opacityPreview?: number;
   displayNumber?: DisplayNumber;
+  output?: string;
+
+  /**
+   * Only for libcamera
+   */
+  gain?: number;
+  denoiseMode?: DenoiseMode;
+
+  /**
+   * Only for vidcamera
+   */
+  colorEffect?: [number, number]; // U,V
+  imageEffectMode?: ImageEffectMode;
+  iso?: number;
+  analogGain?: number;
+  digitalGain?: number;
+  videoStabilization?: boolean;
+  burst?: boolean;
+  flickerMode?: FlickerMode;
   annotate?: (number | string)[];
   annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
-  output?: string;
+  opacityPreview?: number;
+  dynamicRange?: DynamicRange;
 }
 
 declare interface StreamCamera {

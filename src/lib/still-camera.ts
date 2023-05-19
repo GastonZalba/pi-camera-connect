@@ -11,6 +11,7 @@ import {
   StillLibrary,
   MeteringMode,
   Rotation,
+  DenoiseMode,
 } from '..';
 import { indexOfAll, spawnPromise } from '../util';
 import { getSharedArgs } from './shared-args';
@@ -31,61 +32,41 @@ export interface StillOptions {
   exposureMode?: ExposureMode;
   awbMode?: AwbMode;
   awbGains?: [number, number];
-
-  /**
-   * Only for stillcamera
-   */
-  iso?: number;
-
-  /**
-   * Only for stillcamera
-   */
-  analogGain?: number;
-
-  /**
-   * Only for stillcamera
-   */
-  digitalGain?: number;
-
-  /**
-   * Only for libcamera
-   */
-  gain?: number;
-
-  /**
-   * Only for stillcamera
-   */
-  imageEffectMode?: ImageEffectMode;
-
-  /**
-   * Only for stillcamera
-   */
-  colorEffect?: [number, number]; // U,V
-
-  /**
-   * Only for stillcamera
-   */
-  videoStabilization?: boolean;
-
-  dynamicRange?: DynamicRange;
   raw?: boolean;
   quality?: number;
   statistics?: boolean;
   thumbnail?: [number, number, number] | false; // X, Y, Q
   meteringMode?: MeteringMode;
-  flickerMode?: FlickerMode;
-  burst?: boolean;
   roi?: [number, number, number, number]; // X, Y, W, H
   showPreview?: [number, number, number, number] | 'fullscreen' | false; // X,Y,W,H
-  opacityPreview?: number;
   displayNumber?: DisplayNumber;
   exif?: { [key: string]: string | number } | false;
   gpsExif?: boolean;
-  annotate?: (number | string)[];
-  annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
   output?: string;
   frameStart?: number;
   latest?: string;
+
+  /**
+   * Only for libcamera
+   */
+  gain?: number;
+  denoiseMode?: DenoiseMode;
+
+  /**
+   * Only for stillcamera
+   */
+  colorEffect?: [number, number]; // U,V
+  imageEffectMode?: ImageEffectMode;
+  iso?: number;
+  analogGain?: number;
+  digitalGain?: number;
+  videoStabilization?: boolean;
+  burst?: boolean;
+  flickerMode?: FlickerMode;
+  annotate?: (number | string)[];
+  annotateExtra?: [number, string, string]; // fontSize, fontColor, backgroundColor
+  opacityPreview?: number;
+  dynamicRange?: DynamicRange;
 }
 
 declare interface StillCamera {
@@ -142,7 +123,7 @@ class StillCamera extends EventEmitter {
       /**
        * Capture delay (ms)
        */
-      ...(!this.options.showPreview ? ['--timeout', this.options.delay!.toString()] : []),
+      ...['--timeout', this.options.showPreview ? '0' : this.options.delay!.toString()],
 
       /**
        * RAW (Save Bayer Data)
@@ -233,7 +214,13 @@ class StillCamera extends EventEmitter {
 
     // Listen for error events
     childProcess.stdout.on('error', err => this.emit('error', err));
-    childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
+
+    childProcess.stderr.on('data', data => {
+      const str = data.toString();
+      if (str.includes('ERROR')) this.emit('error', new Error(str));
+      this.emit('data', str);
+    });
+
     childProcess.stderr.on('error', err => this.emit('error', err));
 
     // Listen for close events
@@ -307,8 +294,8 @@ class StillCamera extends EventEmitter {
             this.once('frame', data => resolve(data));
           }
           if (this.childProcess) {
-            // send character to take the picture
-            this.childProcess.stdin.write('-', err => {
+            // send enter to take the picture
+            this.childProcess.stdin.write('\n', err => {
               if (err) reject(err);
               if (this.options.output) {
                 resolve(null);

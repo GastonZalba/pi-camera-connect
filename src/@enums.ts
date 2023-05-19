@@ -93,6 +93,14 @@ export enum DisplayNumber {
   HDMI1 = 7,
 }
 
+export enum DenoiseMode {
+  Off = 'off',
+  Auto = 'auto',
+  ColorDenoiseOff = 'cdn_off',
+  ColorDEnoiseFast = 'cdn_fast',
+  ColorDenoiseHq = 'cdn_hq ',
+}
+
 export enum StillLibrary {
   Raspistill = 'raspistill',
   Libcamera = 'libcamera-still',
