@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { AwbMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, MeteringMode, Rotation } from '..';
+import { AwbMode, DenoiseMode, DisplayNumber, DynamicRange, ExposureMode, FlickerMode, Flip, ImageEffectMode, MeteringMode, Rotation } from '..';
 export declare enum Codec {
     H264 = "H264",
     MJPEG = "MJPEG"
@@ -30,28 +30,36 @@ export interface StreamOptions {
     contrast?: number;
     brightness?: number;
     saturation?: number;
-    iso?: number;
     exposureCompensation?: number;
     exposureMode?: ExposureMode;
     awbMode?: AwbMode;
     awbGains?: [number, number];
-    analogGain?: number;
-    digitalGain?: number;
-    gain?: number;
-    imageEffectMode?: ImageEffectMode;
-    colorEffect?: [number, number];
-    dynamicRange?: DynamicRange;
-    videoStabilization?: boolean;
     statistics?: boolean;
     meteringMode?: MeteringMode;
-    flickerMode?: FlickerMode;
     roi?: [number, number, number, number];
     showPreview?: [number, number, number, number] | 'fullscreen' | false;
-    opacityPreview?: number;
     displayNumber?: DisplayNumber;
+    output?: string;
+    /**
+     * Only for libcamera
+     */
+    gain?: number;
+    denoiseMode?: DenoiseMode;
+    /**
+     * Only for vidcamera
+     */
+    colorEffect?: [number, number];
+    imageEffectMode?: ImageEffectMode;
+    iso?: number;
+    analogGain?: number;
+    digitalGain?: number;
+    videoStabilization?: boolean;
+    burst?: boolean;
+    flickerMode?: FlickerMode;
     annotate?: (number | string)[];
     annotateExtra?: [number, string, string];
-    output?: string;
+    opacityPreview?: number;
+    dynamicRange?: DynamicRange;
 }
 declare interface StreamCamera {
     on(event: 'frame', listener: (image: Buffer) => void): this;

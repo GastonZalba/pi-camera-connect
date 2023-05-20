@@ -95,6 +95,14 @@ var DisplayNumber;
     DisplayNumber[DisplayNumber["SDTV"] = 3] = "SDTV";
     DisplayNumber[DisplayNumber["HDMI1"] = 7] = "HDMI1";
 })(DisplayNumber = exports.DisplayNumber || (exports.DisplayNumber = {}));
+var DenoiseMode;
+(function (DenoiseMode) {
+    DenoiseMode["Off"] = "off";
+    DenoiseMode["Auto"] = "auto";
+    DenoiseMode["ColorDenoiseOff"] = "cdn_off";
+    DenoiseMode["ColorDEnoiseFast"] = "cdn_fast";
+    DenoiseMode["ColorDenoiseHq"] = "cdn_hq ";
+})(DenoiseMode = exports.DenoiseMode || (exports.DenoiseMode = {}));
 var StillLibrary;
 (function (StillLibrary) {
     StillLibrary["Raspistill"] = "raspistill";

@@ -35,7 +35,7 @@ class StillCamera extends events_1.EventEmitter {
             /**
              * Capture delay (ms)
              */
-            ...(!this.options.showPreview ? ['--timeout', this.options.delay.toString()] : []),
+            ...['--timeout', this.options.showPreview ? '0' : this.options.delay.toString()],
             /**
              * RAW (Save Bayer Data)
              * This option inserts the raw Bayer data from the camera in to the
@@ -108,7 +108,12 @@ class StillCamera extends events_1.EventEmitter {
         });
         // Listen for error events
         childProcess.stdout.on('error', err => this.emit('error', err));
-        childProcess.stderr.on('data', data => this.emit('error', new Error(data.toString())));
+        childProcess.stderr.on('data', data => {
+            const str = data.toString();
+            if (str.includes('ERROR'))
+                this.emit('error', new Error(str));
+            this.emit('data', str);
+        });
         childProcess.stderr.on('error', err => this.emit('error', err));
         // Listen for close events
         childProcess.stdout.once('close', () => {
@@ -170,8 +175,8 @@ class StillCamera extends events_1.EventEmitter {
                         this.once('frame', data => resolve(data));
                     }
                     if (this.childProcess) {
-                        // send character to take the picture
-                        this.childProcess.stdin.write('-', err => {
+                        // send enter to take the picture
+                        this.childProcess.stdin.write('\n', err => {
                             if (err)
                                 reject(err);
                             if (this.options.output) {

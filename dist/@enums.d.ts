@@ -84,6 +84,13 @@ export declare enum DisplayNumber {
     SDTV = 3,
     HDMI1 = 7
 }
+export declare enum DenoiseMode {
+    Off = "off",
+    Auto = "auto",
+    ColorDenoiseOff = "cdn_off",
+    ColorDEnoiseFast = "cdn_fast",
+    ColorDenoiseHq = "cdn_hq "
+}
 export declare enum StillLibrary {
     Raspistill = "raspistill",
     Libcamera = "libcamera-still"
